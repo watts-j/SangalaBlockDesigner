@@ -5702,7 +5702,14 @@ function loadParts(lib, fileName, quiet){
     if(!KINDS[kind]){
       /* A new kind. Its thickness and shape come from the part itself, since nothing here knows
          what it is; a tile says shape "box" and carries no studs. */
-      const label = kind.charAt(0).toUpperCase()+kind.slice(1);
+      /* THE LIBRARY MAY NAME ITS OWN BUTTON. Capitalizing the kind can only ever produce one word,
+         so a catalog that says "Round Plate" got a button reading "Roundplate" and one that says
+         "Knobbed Brick" got "Knobbed" - while Inverted Slope, Round Brick and Wedge Plate read
+         properly for no better reason than being built in above (Watts, 2026-08-27: "'Inverted
+         Slope' is two words. Why couldn't 'Round Plate' be a type?"). It could, and it now is: the
+         label is read from the part where it carries one. Derived only where it does not, so every
+         library written before today opens exactly as it did. */
+      const label = p.label || (kind.charAt(0).toUpperCase()+kind.slice(1));
       KINDS[kind] = {label:label, shape:(p.shape==="box"?"rect":p.shape||"rect"),
                      h:Math.max(1, p.h|0), sizes:[], studs:(kind!=="tile")};
       SIZES[kind] = {};
