@@ -608,13 +608,18 @@
   <button id="saveLibrary" title="Save the parts library as it now stands, so it can be shared or reopened">Library <small>.library</small></button>
 </div>
 <div id="partmenu" class="menu" style="position:fixed;z-index:31;display:none">
+  <!-- THE ORDER IS WATTS', 2026-08-27, and KIND_ORDER below carries the whole of it - these seven
+       are only the ones the page ships. A kind a library adds is INSERTED into that order rather
+       than appended, so Round Plate lands beside Plate and the two Slope Corners beside the Slopes.
+       The cone is a BLACK triangle (&#9650;), not the red one it was: every other mark on this menu
+       is a plain black glyph and the cone was the only splash of colour in the row. -->
   <button data-kind="brick">&#129521; Brick</button>
+  <button data-kind="round">&#11044; Round Brick</button>
   <button data-kind="plate">&#9644; Plate</button>
   <button data-kind="slope">&#9722; Slope</button>
   <button data-kind="invslope">&#9721; Inverted Slope</button>
-  <button data-kind="round">&#11044; Round Brick</button>
-  <button data-kind="cone">&#128314; Cone</button>
   <button data-kind="wedge">&#9699; Wedge Plate</button>
+  <button data-kind="cone">&#9650; Cone</button>
 </div>
 
 <input type="file" id="fOpen" accept=".block,.model,.library,.parts,.kit,.json" style="display:none">
@@ -5503,7 +5508,15 @@ function loadModel(j){
    simply another size of something already offered. It brings its own button and its own answer to
    whether it carries studs. */
 const KIND_MARK = {brick:"🧱", plate:"▬", slope:"◺", invslope:"◹",
-                   round:"⬤", cone:"🔺", wedge:"◣", tile:"▭"};
+                   round:"⬤", cone:"▲", wedge:"◣", tile:"▭"};
+/* THE ORDER THE PART MENU READS IN (Watts, 2026-08-27). It ran built-ins first, in the order they
+   happened to be written into the markup, and then whatever a library added, in the order the
+   library happened to list it - so Round Plate sat at the bottom away from Plate, and the two Slope
+   Corners away from the Slopes. Stated in one place instead, and addKindButton INSERTS by it.
+   A kind not named here goes to the end, which is what should happen to one nobody has placed yet. */
+const KIND_ORDER = ["brick", "round", "plate", "roundplate",
+                    "slope", "invslope", "slopecorner", "invslopecorner",
+                    "wedge", "knobbed", "jumper", "bow", "cone"];
 let libraries = [];                      /* the names of the libraries loaded, for the .block file */
 let libParts = [];                       /* what those libraries hold, for the Library section */
 let libSel = -1;                         /* the row the builder has clicked; a MARK, not a pickup */
@@ -5758,7 +5771,13 @@ function addKindButton(kind, label){
   b.dataset.kind = kind;
   b.textContent = (KIND_MARK[kind] || "▪") + " " + label;
   b.onclick = (e)=>{ e.stopPropagation(); part={...part, kind:kind}; closeMenus(); applySize(true); };
-  menu.appendChild(b);
+  /* PUT WHERE IT BELONGS, not on the end - see KIND_ORDER. Inserted before the first button that
+     ranks after it, so a library may be listed in any order and the menu still reads the same. */
+  const rank = k => { const i = KIND_ORDER.indexOf(k); return i < 0 ? 999 : i; };
+  const mine = rank(kind);
+  const after = Array.prototype.find.call(menu.querySelectorAll("button[data-kind]"),
+                                          x => rank(x.dataset.kind) > mine);
+  menu.insertBefore(b, after || null);
 }
 /* `quiet` for a library that arrives WITH a project rather than by being opened: the designer did not
    ask for it and does not need telling it happened. */
