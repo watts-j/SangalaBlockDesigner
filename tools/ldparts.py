@@ -173,19 +173,52 @@ def show(numbers):
               % (n, got, desc[:38], "%.2f x %.2f" % (w, d), h, (b[3] - b[2]) * LDU_MM))
 
 
-def find(term, limit=25):
+def _squash(s):
+    """One space between words, lowercased - so a typed term need not reproduce LDraw's padding."""
+    return " ".join(s.lower().split())
+
+
+def catalog():
+    """(number, description) for every part, from parts.lst where the library ships one.
+
+    THE INDEX IS THE WHOLE DIFFERENCE BETWEEN USABLE AND NOT. Reading the first line of every file
+    means ~19,000 opens against the full library, each one inspected by whatever the machine runs,
+    and the search appears to hang (Watts, 2026-08-27: "Powershell timed out with that last command
+    and returned nothing"). LDraw ships parts.lst, one line per part, already holding exactly the two
+    things a search needs. Where it is missing - the repository's own bundled subset does not carry
+    it - the scan still happens, which at 39 files costs nothing.
+    """
+    lst = os.path.join(ROOT, "parts.lst")
+    if os.path.exists(lst):
+        out = []
+        with open(lst, "r", encoding="utf-8", errors="replace") as f:
+            for line in f:
+                bits = line.strip().split(None, 1)
+                if len(bits) == 2 and bits[0].lower().endswith(".dat"):
+                    out.append((bits[0][:-4], bits[1]))
+        if out:
+            return out
     d = os.path.join(ROOT, "parts")
+    return [(n[:-4], first_line(os.path.join(d, n)))
+            for n in sorted(os.listdir(d)) if n.endswith(".dat")]
+
+
+def find(term, limit=25):
+    """Search descriptions. Whitespace in the term is not significant, so "2 x 3 inverted" finds
+    "Slope Brick 45  2 x  3 Inverted" without anyone having to reproduce the padding."""
+    want = _squash(term)
     hits = 0
-    for name in sorted(os.listdir(d)):
-        if not name.endswith(".dat"):
+    for num, desc in catalog():
+        if desc.startswith("~"):
             continue
-        desc = first_line(os.path.join(d, name))
-        if term.lower() in desc.lower() and not desc.startswith("~"):
-            print("  %-10s %s" % (name[:-4], desc))
+        if want in _squash(desc):
+            print("  %-10s %s" % (num, " ".join(desc.split())))
             hits += 1
             if hits >= limit:
-                print("  ... (more)")
+                print("  ... more (showing the first %d)" % limit)
                 return
+    if not hits:
+        print("  nothing matched %r" % term)
 
 
 if __name__ == "__main__":
