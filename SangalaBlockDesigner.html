@@ -998,8 +998,25 @@ function worldParams(){
 const mx=v=>v*PX;
 /* w and d are the FOOTPRINT in studs (columns across, rows deep); h is the part's THICKNESS in
    plates - 3 for a brick, 1 for a plate - which is how far it stands proud of the layer behind. */
+/* THE PART'S OWN NAME AND FILE, by design number, filled in as a library is read. A part dragged out
+   of the Library panel carries both; one PICKED FROM THE PART MENU carried neither, and both matter.
+     - partYaw reads the ramp's span out of the NAME, and the menu built one from the page's own
+       rows-by-columns - "Bow 1x4" for a part the catalog calls "Slope Brick Curved 4 x 1 Double".
+       parseInt("1x4") is 1, so a 4-stud ramp measured as 1, the part was judged not to need turning,
+       and its outline was taken end-on. End-on it fills its box, so the drawing fell through to the
+       hand-made stand-in: a long ramp where the bow should be (Watts, 2026-08-27, and it took the
+       whole afternoon to find because the SAME part dragged from the Library was perfect).
+     - and geomOf needs the FILE, so 44237, 93888 and 2752 draw when they are picked rather than
+       dragged. They have no LDraw file of their own.
+   Where no library has been opened there is nothing to look up, and catName supplies the catalog's
+   own way round - "Slope 2 x 1", not "Slope 1x2" - which is what partYaw has always wanted. That is
+   the same fault, and it has been in every built-in slope since the menu was typed. */
+const LIBNAME = Object.create(null);
+const LIBGEOM = Object.create(null);
 const cur=()=>({shape:KINDS[part.kind].shape, h:KINDS[part.kind].h, w:part.w, d:part.d||1,
-                id:part.id, name:KINDS[part.kind].label+" "+part.n,
+                id:part.id,
+                name:LIBNAME[part.id] || (KINDS[part.kind].label+" "+catName(part.kind, part.n, part.id)),
+                ...(LIBGEOM[part.id] ? {geometry:LIBGEOM[part.id]} : {}),
                 /* carried on the PART rather than looked up when drawing, so a brick already
                    placed keeps its own answer when it is saved and opened again */
                 studs:KINDS[part.kind].studs!==false});
@@ -5726,6 +5743,10 @@ function loadParts(lib, fileName, quiet){
   (lib.parts||[]).forEach(p=>{
     const kind = p.kind || "brick";
     const w = Math.max(1, p.w|0), dd = Math.max(1, p.d|0), key = dd+"x"+w;
+    /* recorded for EVERY part, including one whose size the menu already offered - the name and the
+       file are facts about the part, not about whether this library was the first to mention it */
+    if(p.name) LIBNAME[p.id] = p.name;
+    if(p.geometry) LIBGEOM[p.id] = p.geometry;
     if(!KINDS[kind]){
       /* A new kind. Its thickness and shape come from the part itself, since nothing here knows
          what it is; a tile says shape "box" and carries no studs. */
