@@ -120,19 +120,23 @@
 # ribs are on the underside so neither the footprint nor the height changes.
 2752 -> 3747               # Slope 2 x 3, Inv.   (LDraw files this as 3747)
 
-# WEDGES, not corners (Watts, 2026-08-27, on the measurements). Two of these four are corner slopes
-# and two are not: LDraw calls 48933 and 13349 "Wedge 4 x 4 Triple", and 48933 is the same piece the
-# crane's wing was built from. Wedge covers all four honestly where Corner covered half of them.
-# At run time this joins the Wedge Plate bin the application already has, which is where a wedge
-# belongs; the label here is what its button should read once the interface honors one.
-# `rect` is deliberate rather than provisional now that all four are measured: it asks for no quarter
-# turn, which is right for a piece that has no single ramp to lay across the profile, and the
-# workspace draws each one's true outline from its own geometry regardless. What their footprints
-# are is no longer a declaration at all - it is read off their undersides, which is how 3676 comes
-# out resting on 1 x 1 of its 2 x 2, and 13349 on 2 x 1 of its 4 x 4.
-:kind wedge "Wedge" rect
+# SLOPES THAT TURN A CORNER, falling in two directions instead of one. Named for what they DO
+# (Watts, 2026-08-27): "Wedged vs. Sloped is not a clear distinction." It is not - LDraw calls 13548
+# a slope and 48933 a wedge, and a student holding the two would be hard put to say which is which.
+# They were briefly one Wedge bin, which also swept them in with the wedge PLATES the application
+# already offers, and those are a different thing again.
+# SPLIT UPRIGHT FROM INVERTED, as Slope and Inverted Slope already are: what a piece rests on is the
+# difference that decides where it can go, and it is exactly the difference between these two pairs.
+# 13548 rests on its whole 2 x 2 and 3676 on 1 x 1 of the same box; 48933 on its whole 4 x 4 and
+# 13349 on 2 x 1 of the same.
+# `rect` on both, and deliberately: it asks for no quarter turn, which is right for a piece with no
+# single ramp to lay across the profile. Their footprints are not declared at all - they are read off
+# their undersides, which is how the two inverted ones come out smaller than the boxes they fill.
+:kind slopecorner "Slope Corner" rect
 13548                      # Slope 2 x 2 x 1 Corner
 48933                      # Slope 4 x 2, Corner
+
+:kind invslopecorner "Inverted Slope Corner" rect
 3676                       # Slope, 2 x 2, Corner, Inv.
 13349                      # Slope 4 x 2, Corner, Inv.
 

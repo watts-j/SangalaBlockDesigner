@@ -1053,12 +1053,12 @@
   {
    "id": "13548",
    "name": "Slope Brick 45 2 x 2 Double Convex with 45 Corner",
-   "kind": "wedge",
+   "kind": "slopecorner",
    "w": 2,
    "d": 2,
    "h": 3,
    "shape": "rect",
-   "label": "Wedge",
+   "label": "Slope Corner",
    "top": [
     [
      0.5,
@@ -1069,12 +1069,12 @@
   {
    "id": "48933",
    "name": "Wedge 4 x 4 Triple with Stud Notches",
-   "kind": "wedge",
+   "kind": "slopecorner",
    "w": 4,
    "d": 4,
    "h": 3,
    "shape": "rect",
-   "label": "Wedge",
+   "label": "Slope Corner",
    "top": [
     [
      2.5,
@@ -1089,22 +1089,22 @@
   {
    "id": "3676",
    "name": "Slope Brick 45 2 x 2 Inverted Double Convex",
-   "kind": "wedge",
+   "kind": "invslopecorner",
    "w": 1,
    "d": 1,
    "h": 3,
    "shape": "rect",
-   "label": "Wedge"
+   "label": "Inverted Slope Corner"
   },
   {
    "id": "13349",
    "name": "Wedge 4 x 4 Triple Inverted with Ribs between Studs",
-   "kind": "wedge",
+   "kind": "invslopecorner",
    "w": 2,
    "d": 1,
    "h": 3,
    "shape": "rect",
-   "label": "Wedge"
+   "label": "Inverted Slope Corner"
   },
   {
    "id": "93273",

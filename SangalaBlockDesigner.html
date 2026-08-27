@@ -614,7 +614,7 @@
   <button data-kind="invslope">&#9721; Inverted Slope</button>
   <button data-kind="round">&#11044; Round Brick</button>
   <button data-kind="cone">&#128314; Cone</button>
-  <button data-kind="wedge">&#9699; Wedge</button>
+  <button data-kind="wedge">&#9699; Wedge Plate</button>
 </div>
 
 <input type="file" id="fOpen" accept=".block,.model,.library,.parts,.kit,.json" style="display:none">
@@ -687,16 +687,12 @@ const KINDS = {
              sizes:[{w:1,id:"3062",n:"1x1"}]},
   cone:     {label:"Cone",           shape:"cone",     h:3,
              sizes:[{w:1,id:"4589",n:"1x1"}]},
-  /* WEDGE, NOT WEDGE PLATE (Watts, 2026-08-27). The bin held only 41769 and 41770, which ARE wedge
-     plates, so the narrower name fitted. A library can now add wedges that are not plates - 48933
-     and 13349 are 4 x 4 triple wedges, 13548 and 3676 are corner slopes - and they join this bin,
-     where "Wedge Plate" then named the bin after two of its six members. The two parts below are
-     still wedge plates; the BIN is wedges.
-     NOTE, and it is Glen's to settle: Sangala Studio offers a wedge plate too, and this project's
-     rule is that the three applications share one vocabulary. If Studio's own control says "Wedge
-     Plate", this now disagrees with it. Studio is not reachable from here, so it has not been
-     checked. */
-  wedge:    {label:"Wedge",          shape:"wedge",    h:1,
+  /* WEDGE PLATE, and back to it. It was widened to "Wedge" for an afternoon, when the kit's four
+     corner slopes were filed here for want of a better bin - then they got one of their own, Slope
+     Corner and Inverted Slope Corner, and this went back to holding the two parts it has always
+     held. Both of them ARE wedge plates, so the narrow name is the true one, and it agrees with
+     Sangala Studio again - which matters, because the three applications share one vocabulary. */
+  wedge:    {label:"Wedge Plate",    shape:"wedge",    h:1,
              sizes:[{w:4,id:"41769",n:"2x4 Right"},{w:4,id:"41770",n:"2x4 Left"}]}
 };
 /* rows x columns -> design number, for the kinds that come in many sizes. GENERATED from the
