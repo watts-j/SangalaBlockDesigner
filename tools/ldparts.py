@@ -236,7 +236,16 @@ def find(term, limit=25):
     want = _squash(term)
     hits = 0
     for num, desc in catalog():
-        if desc.startswith("~"):
+        # A TILDE IS TWO DIFFERENT STATEMENTS AND ONLY ONE OF THEM IS NOISE. LDraw marks a redirect
+        # stub "~Moved to 3040b", which nobody wants in a search; it marks an OBSOLETE MOULD the same
+        # way - "~Slope Brick 45 2 x 2 Inverted without Inner Stopper Ring (Obsolete)" - and that is a
+        # real part with real geometry, which the crane's own library already orders under 3660.
+        # Skipping both hid every obsolete part from the search, so a number that exists came back as
+        # "nothing matched" (Watts, 2026-08-27, looking for the 2 x 3 inverted slope). Only the
+        # redirects are skipped now, and the tilde is left on the rest so an obsolete mould still
+        # says so on the line.
+        low = desc.lower()
+        if low.startswith("~moved to") or low.startswith("~renamed"):
             continue
         if want in _squash(desc):
             print("  %-10s %s" % (num, " ".join(desc.split())))
