@@ -2681,6 +2681,17 @@ function ldrFlatten(files, name){
 
 /* Ask once per part number, and never twice. A machine with no bridge answers nothing, which is not
    an error: the hand-written shape stands in and the application goes on working. */
+/* THE NUMBER A PART IS ORDERED BY IS NOT ALWAYS THE FILE IT IS DRAWN FROM. LEGO renumbers parts that
+   LDraw still files under the old number with no redirect between them - Brick 2 x 6 is design 44237
+   and LDraw 2456, Brick 2 x 8 is 93888 and 3007, and the 2 x 3 inverted slope is 2752 and 3747a. The
+   library has always recorded both, as `id` and `geometry`, and the page has always asked for `id`:
+   fetching /part?f=44237 finds nothing, and the brick draws as nothing at all - in the 3D view, in
+   the plan's own outline, and in the snapshot the booklet is made from, without an error anywhere.
+   Most numbers need no such help, because LDraw keeps a "~Moved to" stub at the old number and the
+   bridge follows it. These three have no stub, and there is no rule that says which do - which is
+   exactly why the library measures the answer and writes it down instead of anyone deriving it.
+   ASKED IN ONE PLACE so a part cannot be drawn from one file and placed from another. */
+const geomOf = p => (p && p.geometry) || (p && p.id);
 function ldrLoad(id){
   if(id in ldrMesh) return ldrMesh[id];
   ldrMesh[id] = null; ldrWaiting++;
@@ -2920,14 +2931,14 @@ function silOf(id, iu, iv){
    it rather than with a matrix the plan never used. */
 function planOutline(p, st, away, fl, rot){
   if(!p || !p.id) return null;
-  const m = ldrLoad(p.id);
+  const m = ldrLoad(geomOf(p));
   if(!m) return null;
   const yaw = partYaw(p, m.box) + (fl ? 180 : 0) + 90*(rot|0);
   const c = Math.round(Math.cos(yaw*Math.PI/180)), s = Math.round(Math.sin(yaw*Math.PI/180));
   const iu = c ? 0 : 2, su = st ? (c || s) : (c || -s);
   const iv = st ? 1 : (c ? 2 : 0);
   const sv = st ? 1 : (away ? 1 : -1)*(c || s);
-  const sil = silOf(p.id, iu, iv);
+  const sil = silOf(geomOf(p), iu, iv);
   if(!sil) return null;
   return {sil, mu: su < 0, mv: sv < 0};
 }
@@ -2935,7 +2946,7 @@ function planOutline(p, st, away, fl, rot){
 /* Put the part where the page has placed it. The footprint is centred on the cell the brick sits on
    and the HEIGHT is measured from the part's origin, which is the top of its body. */
 function ldrTris(b, p, x0, x1, y0, y1, z0, z1){
-  const m = ldrLoad(p.id);
+  const m = ldrLoad(geomOf(p));
   if(!m) return null;
   /* A TURNED PART TAKES THE RELIEF MAPPING, which is the whole of what "turned onto a face" means in
      3D: relief lays a part with its studs towards the viewer, and that is where a part on the side of
@@ -4442,6 +4453,7 @@ function designJSON(){ return (
        is simply passed over on the way back in, so an arrangement cannot go stale. */
     ...(groupOrder.length?{groupOrder:groupOrder}:{}),
     bricks:bricks.map(b=>({id:b.p.id,name:b.p.name,w:b.p.w,d:b.p.d||1,h:b.p.h,shape:b.p.shape,
+                           ...(b.p.geometry?{geometry:b.p.geometry}:{}),
                            color:COLORS[b.colorIdx].code,col:b.col,row:b.row,base:b.base||0,
                            flip:b.flip,
                            /* written only when the part is turned, so an upright design is unchanged */
@@ -5579,7 +5591,9 @@ cv.addEventListener("drop", e=>{
              studs:fromKit ? (lp.studs!==false) : (lp.kind!=="tile"),
              /* the studs on its faces and on its top, measured in the library - see drawBrick */
              ...(lp.side&&lp.side.length?{side:lp.side}:{}),
-             ...(lp.top&&lp.top.length?{top:lp.top}:{})};
+             ...(lp.top&&lp.top.length?{top:lp.top}:{}),
+             /* the file its measurements came from, where that is not the number it is ordered by */
+             ...(lp.geometry?{geometry:lp.geometry}:{})};
   /* IN THE COLOR ASSIGNED TO THAT PART, which is not necessarily the palette's: a builder who has set
      one row green and another black, then dragged the black one out, means black. The palette shows
      the SELECTED row's color; a part carries its own.
@@ -5610,6 +5624,7 @@ function kitJSON(){
     sections:secs.map(s=>({name:s.name||"Other Parts",
       rows:s.rows.map(r=>({qty:r.n, color:r.col.code, colorName:r.col.name,
         id:r.p.id, name:r.p.name, w:r.p.w, d:r.p.d||1, h:r.p.h, shape:r.p.shape,
+        ...(r.p.geometry?{geometry:r.p.geometry}:{}),
         ...(r.p.studs===false?{studs:false}:{}),
         ...(r.p.side&&r.p.side.length?{side:r.p.side}:{}),
         ...(r.p.top&&r.p.top.length?{top:r.p.top}:{})}))}))}, null, 1);
@@ -5776,7 +5791,8 @@ $("fOpen").onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new Fil
     const gmap={};
     bricks=(d.bricks||[]).map(b=>{
       const gp=(b.gpath||[]).map(id=>{ if(!(id in gmap)) gmap[id]=++groupSeq; return gmap[id]; });
-      return {p:{id:b.id,name:b.name,w:b.w,d:b.d||1,h:b.h,shape:b.shape,studs:b.studs,side:b.side,top:b.top},
+      return {p:{id:b.id,name:b.name,w:b.w,d:b.d||1,h:b.h,shape:b.shape,studs:b.studs,side:b.side,top:b.top,
+                 geometry:b.geometry},
         colorIdx:Math.max(0,COLORS.findIndex(c=>c.code===b.color)),col:b.col,row:b.row,flip:b.flip,
         base:b.base, turn:b.turn, rot:b.rot, half:b.half,
         group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
