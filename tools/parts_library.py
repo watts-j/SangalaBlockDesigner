@@ -305,6 +305,62 @@ def footprint(shape, w, dd):
 DIRECTIVE = re.compile(r'^:kind\s+(\S+)(?:\s+"([^"]*)")?(?:\s+(\S+))?\s*$')
 
 
+def suggest(note, limit=4):
+    """Candidates for a number that would not resolve, from the collector's own description.
+
+    THE SPECIFICATION ASKED FOR THIS AND IT WAS NEVER BUILT. Documents\Adding LEGO Blocks: "Where a
+    part is known by sight rather than by number, its description may be written instead ... and the
+    builder reports what it matched so the match can be confirmed before the library is written."
+
+    Until now an unresolvable line was a dead end that a person had to close by searching the catalog
+    by hand and editing the number in (Watts, 2026-08-27: "Why do I need to manually change numbers?
+    Is this something you cannot do?"). The catalog is right here and the line already carries a
+    description in its comment, so the search is the script's work, not the reader's.
+
+    IT SUGGESTS AND DOES NOT SUBSTITUTE. A part is measured, never remembered - that rule is the
+    reason this tool exists - and a plausible name is not a measurement. So the candidates are
+    printed for a person to confirm, which is what the specification asked for.
+
+    The description is matched loosely: its digits and its words must all appear, in any order, so
+    "Slope 2 x 3, Inv." finds a part LDraw writes "Slope Brick 45  2 x  3 Inverted" whichever way
+    round the size is written. Punctuation and the abbreviations a collector writes are dropped.
+    """
+    if not note:
+        return []
+    ABBREV = {"inv": "inverted", "rnd": "round", "sq": "square"}
+    words = [ABBREV.get(w, w) for w in re.split(r"[^a-z0-9]+", note.lower()) if w]
+    words = [w for w in words if w != "x"]
+    if not words:
+        return []
+    noun = words[0]
+    # A REPEATED DIGIT MUST BE MATCHED TWICE. Checking each word for mere presence let "Slope 2 x 2"
+    # match a part written "2 x 1", because the second 2 asked the same question as the first and got
+    # the same yes - and the wrong part then led the list, which is the one place a suggestion must
+    # not be careless. Digits are counted against the description's own words; the rest stay a
+    # substring test, so "inverted" still finds "Inverted without Inner Stopper Ring".
+    from collections import Counter
+    want_digits = Counter(w for w in words if w.isdigit())
+    want_words = [w for w in words if not w.isdigit()]
+    out = []
+    for num, desc in ldparts.catalog(quiet=True):
+        low = desc.lower()
+        if low.startswith("~moved to") or low.startswith("~renamed"):
+            continue
+        hay = " ".join(low.split())
+        have = Counter(t for t in re.split(r"[^a-z0-9]+", hay) if t.isdigit())
+        if all(have[d] >= n for d, n in want_digits.items()) and all(w in hay for w in want_words):
+            out.append((num, " ".join(desc.split()), hay))
+            if len(out) > 400:
+                break                      # a description this loose is not worth ranking
+    # RANKED, BECAUSE A LIST ORDERED BY PART NUMBER IS NOT A SUGGESTION. "Brick 2 x 4" matched three
+    # slopes before this, on nothing more than the 2 and the 4, and the right answer led only by the
+    # luck of its number. What a collector writes first is the NOUN - Slope, Brick, Plate - and LDraw
+    # writes the same word first, so a description that opens with it is the better candidate; among
+    # those, the shortest is the plainest part rather than a variant with extras.
+    out.sort(key=lambda r: (not r[2].startswith(noun), len(r[2]), r[0]))
+    return [(num, desc) for num, desc, _ in out[:limit]]
+
+
 def read_list(path):
     """One part to a line: number[ -> ldraw][, qty][, color], under an optional :kind heading.
 
@@ -321,7 +377,8 @@ def read_list(path):
     rows = []
     kind = label = shape = None
     for n, raw in enumerate(open(path, encoding="utf-8"), 1):
-        line = raw.split("#")[0].strip()
+        line, _, note = raw.partition("#")
+        line, note = line.strip(), note.strip()
         if not line:
             continue
         d = DIRECTIVE.match(line)
@@ -340,14 +397,14 @@ def read_list(path):
                 qty = int(b)
             else:
                 color = b
-        rows.append((n, number, ldraw, qty, color, kind, label, shape))
+        rows.append((n, number, ldraw, qty, color, kind, label, shape, note))
     return rows
 
 
 def build(rows):
     pal = colors()
     parts, problems = [], []
-    for lineno, number, ldraw, qty, color, want_kind, want_label, want_shape in rows:
+    for lineno, number, ldraw, qty, color, want_kind, want_label, want_shape, note in rows:
         # MEASURE THE FILE THE LINE NAMES, ORDER BY THE NUMBER IT LEADS WITH. Where the line gives
         # only one number the two are the same, and this is what it always did.
         path, target, name = ldparts.resolve(ldraw or number)
@@ -355,6 +412,16 @@ def build(rows):
             problems.append("line %d: %s could not be resolved in the parts library"
                             % (lineno, ldraw or number)
                             + (" (measuring %s for design %s)" % (ldraw, number) if ldraw else ""))
+            cands = suggest(note)
+            for cand, desc in cands:
+                problems.append("    could it be %s?  %s" % (cand, desc))
+            if cands:
+                problems.append('    if so, write the line as "%s -> %s" - the design number stays '
+                                "the one a builder orders by, the second is only what LDraw measures"
+                                % (number, cands[0][0]))
+            elif note:
+                problems.append("    nothing in the catalog matches %r either - check the number"
+                                % note)
             continue
         box = ldparts.bbox(path)
         if not box:
