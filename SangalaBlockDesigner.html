@@ -618,7 +618,6 @@
   <button data-kind="plate">&#9644; Plate</button>
   <button data-kind="slope">&#9722; Slope</button>
   <button data-kind="invslope">&#9721; Inverted Slope</button>
-  <button data-kind="wedge">&#9699; Wedge Plate</button>
   <button data-kind="cone">&#9650; Cone</button>
 </div>
 
@@ -685,20 +684,14 @@ const KINDS = {
      LEGO gives the part, which is what it is ordered under. */
   invslope: {label:"Inverted Slope", shape:"invslope", h:3,
              sizes:[{w:1,d:1,id:"3665",n:"2x1"},{w:1,d:2,id:"3660",n:"2x2"}]},
-  /* The three Studio also offers. Numbers read from the library, not remembered - and the wedge
-     plate is why that matters: LDraw files it under a different word, "Wing", so searching the
-     catalogue for a wedge plate returns nothing at all. */
+  /* The two Studio also offers. (Three, until 2026-08-27, when Watts took the Wedge Plate bin out
+     along with 41769 and 41770 - "Remove Wedge Plate and all blocks in it from the library". The
+     kit has no wedge plate in it, and the parts that had been filed there are Slope Corners now.
+     The `wedge` SHAPE stays: a library may still declare it, and the crane's own 43712 does.) */
   round:    {label:"Round Brick",    shape:"round",    h:3,
              sizes:[{w:1,id:"3062",n:"1x1"}]},
   cone:     {label:"Cone",           shape:"cone",     h:3,
-             sizes:[{w:1,id:"4589",n:"1x1"}]},
-  /* WEDGE PLATE, and back to it. It was widened to "Wedge" for an afternoon, when the kit's four
-     corner slopes were filed here for want of a better bin - then they got one of their own, Slope
-     Corner and Inverted Slope Corner, and this went back to holding the two parts it has always
-     held. Both of them ARE wedge plates, so the narrow name is the true one, and it agrees with
-     Sangala Studio again - which matters, because the three applications share one vocabulary. */
-  wedge:    {label:"Wedge Plate",    shape:"wedge",    h:1,
-             sizes:[{w:4,id:"41769",n:"2x4 Right"},{w:4,id:"41770",n:"2x4 Left"}]}
+             sizes:[{w:1,id:"4589",n:"1x1"}]}
 };
 /* rows x columns -> design number, for the kinds that come in many sizes. GENERATED from the
    LDraw library by tools/sizes_from_ldraw.py - 22 brick sizes and 34 plate sizes, every number
@@ -5507,8 +5500,24 @@ function loadModel(j){
    A KIND THE MENU DOES NOT HAVE IS ADDED, which is how a tile arrives - the first part that is not
    simply another size of something already offered. It brings its own button and its own answer to
    whether it carries studs. */
+/* THE MARKS, settled with Watts 2026-08-27. Read as pairs, which is the point of them:
+     slope ◺ / invslope ◹      the white pair, one turned through half a circle
+     slopecorner ◣ / invslopecorner ◥   the black pair, the same turn - and ◣ is the mark the
+                               Wedge Plate bin used to carry, handed on when that bin was removed
+     round ⬤ / roundplate ●    the same circle, the smaller one the thinner part
+     knobbed ╋ / jumper ┻      a square cross, and the same cross with its bottom limb taken off,
+                               which is Watts' own description of the two
+   `wedge` HAS NO MARK ANY MORE, deliberately. Its bin is gone, but classify() can still answer
+   "wedge" for a library part - the crane's 43712 does - and leaving ◣ here would have given that
+   part Slope Corner's mark. One icon, one meaning; the fallback ▪ is the honest answer instead. */
 const KIND_MARK = {brick:"🧱", plate:"▬", slope:"◺", invslope:"◹",
-                   round:"⬤", cone:"▲", wedge:"◣", tile:"▭"};
+                   round:"⬤", roundplate:"●", cone:"▲", tile:"▭",
+                   slopecorner:"◣", invslopecorner:"◥",
+                   knobbed:"╋", jumper:"┻", bow:"◠"};
+/* THE BOW'S ARC IS DRAWN THIN by every font that has it, and beside ⬤ and ▲ it read as a scratch.
+   Watts: "Make the Bow line bold." Weight is the mark's, not the button's - the label beside it
+   stays as it is. */
+const KIND_BOLD = {bow:1};
 /* THE ORDER THE PART MENU READS IN (Watts, 2026-08-27). It ran built-ins first, in the order they
    happened to be written into the markup, and then whatever a library added, in the order the
    library happened to list it - so Round Plate sat at the bottom away from Plate, and the two Slope
@@ -5516,7 +5525,7 @@ const KIND_MARK = {brick:"🧱", plate:"▬", slope:"◺", invslope:"◹",
    A kind not named here goes to the end, which is what should happen to one nobody has placed yet. */
 const KIND_ORDER = ["brick", "round", "plate", "roundplate",
                     "slope", "invslope", "slopecorner", "invslopecorner",
-                    "wedge", "knobbed", "jumper", "bow", "cone"];
+                    "knobbed", "jumper", "bow", "cone"];
 let libraries = [];                      /* the names of the libraries loaded, for the .block file */
 let libParts = [];                       /* what those libraries hold, for the Library section */
 let libSel = -1;                         /* the row the builder has clicked; a MARK, not a pickup */
@@ -5769,7 +5778,11 @@ function addKindButton(kind, label){
   if(menu.querySelector('button[data-kind="'+kind+'"]')) return;
   const b = document.createElement("button");
   b.dataset.kind = kind;
-  b.textContent = (KIND_MARK[kind] || "▪") + " " + label;
+  const mk = document.createElement("span");
+  mk.textContent = KIND_MARK[kind] || "▪";
+  if(KIND_BOLD[kind]) mk.style.fontWeight = "700";
+  b.appendChild(mk);
+  b.appendChild(document.createTextNode(" " + label));
   b.onclick = (e)=>{ e.stopPropagation(); part={...part, kind:kind}; closeMenus(); applySize(true); };
   /* PUT WHERE IT BELONGS, not on the end - see KIND_ORDER. Inserted before the first button that
      ranks after it, so a library may be listed in any order and the menu still reads the same. */
