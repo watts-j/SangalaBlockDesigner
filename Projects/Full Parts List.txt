@@ -120,14 +120,17 @@
 # ribs are on the underside so neither the footprint nor the height changes.
 2752 -> 3747               # Slope 2 x 3, Inv.   (LDraw files this as 3747)
 
-# Slopes that fall in TWO directions at once, which no rule in the application describes yet.
-# PROVISIONAL, 2026-08-27. `rect` is the neutral declaration: it states the measured box as the
-# footprint and asks for no quarter turn, so the piece is never turned the wrong way and the
-# workspace still draws its true outline from the part's own geometry. Two things to check against
-# the built parts before this is settled - which way each one must face in profile, and whether the
-# two INVERTED corners rest on less than their box, as a straight inverted slope does. If they do,
-# this bin needs a footprint rule of its own rather than a shape borrowed from somewhere else.
-:kind corner "Corner" rect
+# WEDGES, not corners (Watts, 2026-08-27, on the measurements). Two of these four are corner slopes
+# and two are not: LDraw calls 48933 and 13349 "Wedge 4 x 4 Triple", and 48933 is the same piece the
+# crane's wing was built from. Wedge covers all four honestly where Corner covered half of them.
+# At run time this joins the Wedge Plate bin the application already has, which is where a wedge
+# belongs; the label here is what its button should read once the interface honors one.
+# `rect` is deliberate rather than provisional now that all four are measured: it asks for no quarter
+# turn, which is right for a piece that has no single ramp to lay across the profile, and the
+# workspace draws each one's true outline from its own geometry regardless. What their footprints
+# are is no longer a declaration at all - it is read off their undersides, which is how 3676 comes
+# out resting on 1 x 1 of its 2 x 2, and 13349 on 2 x 1 of its 4 x 4.
+:kind wedge "Wedge" rect
 13548                      # Slope 2 x 2 x 1 Corner
 48933                      # Slope 4 x 2, Corner
 3676                       # Slope, 2 x 2, Corner, Inv.

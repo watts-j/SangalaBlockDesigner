@@ -309,12 +309,20 @@ def footprint(shape, w, dd, rest=None):
     Checked against the application's own table, which was measured independently: 3040 -> 2 x 1,
     3039 -> 2 x 2, 3037 -> 2 x 4, 3665 -> 1 x 1, 3660 -> 1 x 2. All five agree.
     """
+    if rest:
+        # THE FOOTPRINT IS THE RESTING FACE, IN BOTH DIRECTIONS. It was the measured box, corrected
+        # for inverted slopes along one axis only, and that was enough until a part hung over its
+        # base BOTH ways: 3676 covers 2 x 2 and rests on 1 x 1, 13349 covers 4 x 4 and rests on
+        # 2 x 1. Neither is describable by shortening a single side.
+        # An ordinary brick's underside is hollow but its walls reach the full outline, so this
+        # returns the box for it and nothing changes - checked across all 73 parts of the kit, where
+        # 71 came out identical and the two that moved are the two measured wrong.
+        w, dd = int(round(rest[0])), int(round(rest[1]))
     if shape in ("slope", "invslope"):
-        w, dd = dd, w
-        if shape == "invslope":
-            # `rest` is (x, z) in the part's own frame; the swap above has made z the columns.
-            w = max(1, int(round(rest[1]))) if rest else max(1, w - 1)
-    return w, dd
+        w, dd = dd, w                  # the ramp runs along z, and the profile needs it across
+    elif not rest and shape == "invslope":
+        w = max(1, w - 1)
+    return max(1, w), max(1, dd)
 
 
 # A SECTION HEADING IN THE LIST, naming the bin every part below it belongs to until the next one:
