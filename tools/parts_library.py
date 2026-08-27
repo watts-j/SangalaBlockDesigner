@@ -507,6 +507,17 @@ def build(rows):
             if face:
                 part["side"] = face
         top = top_studs(path, box, part["w"], part["d"])
+        # AND TURNED WITH THE PART. top_studs measures [across, down] in the part's OWN frame, and a
+        # ramped part has had its w and d swapped above to lay the ramp across the profile - so the
+        # position was being stated against the wrong pair of edges. 93273 came out with its stud
+        # "2.0 down" on a part one stud deep, which is off the piece altogether (Watts, 2026-08-27:
+        # "the bow renders as a flat brick with studs on the top").
+        # `side` has been guarded against this since it was written; `top` was missed. Swapping is
+        # right rather than suppressing, because the swap is known exactly - and it is confirmed by a
+        # part measured independently: Glen read 3039's two studs off the photograph as
+        # [[0.5,0.5],[0.5,1.5]], and the unswapped measurement is [[0.5,0.5],[1.5,0.5]].
+        if top and shape in ("slope", "invslope"):
+            top = [[b, a] for a, b in top]
         if top:
             part["top"] = top
         if target.lower() != number.lower():
