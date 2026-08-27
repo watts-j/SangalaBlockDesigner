@@ -178,29 +178,56 @@ def _squash(s):
     return " ".join(s.lower().split())
 
 
-def catalog():
-    """(number, description) for every part, from parts.lst where the library ships one.
+def catalog(quiet=False):
+    """(number, description) for every part - from parts.lst, else from an index built once.
 
-    THE INDEX IS THE WHOLE DIFFERENCE BETWEEN USABLE AND NOT. Reading the first line of every file
-    means ~19,000 opens against the full library, each one inspected by whatever the machine runs,
-    and the search appears to hang (Watts, 2026-08-27: "Powershell timed out with that last command
-    and returned nothing"). LDraw ships parts.lst, one line per part, already holding exactly the two
-    things a search needs. Where it is missing - the repository's own bundled subset does not carry
-    it - the scan still happens, which at 39 files costs nothing.
+    READING EVERY PART FILE IS NOT A SEARCH, IT IS A SWEEP. Thirty-nine files in the repository's
+    bundled subset, about 19,000 in the real library, each a separate open inspected by whatever the
+    machine runs. It does return, eventually, which is worse than failing: twice now a search has
+    looked like a hang (Watts, 2026-08-27).
+
+    Some LDraw distributions ship parts.lst, one line per part, holding exactly what a search needs.
+    Mine assumed every distribution did. Where it is absent the sweep happens ONCE and is written to
+    parts.index beside it, so only the first search after an install pays for it. The index is
+    rebuilt when the parts folder has been touched more recently than the index, which catches a
+    library that has been updated underneath it. LDraw/ is git-ignored, so neither file is ever
+    committed by accident.
     """
     lst = os.path.join(ROOT, "parts.lst")
     if os.path.exists(lst):
-        out = []
-        with open(lst, "r", encoding="utf-8", errors="replace") as f:
-            for line in f:
-                bits = line.strip().split(None, 1)
-                if len(bits) == 2 and bits[0].lower().endswith(".dat"):
-                    out.append((bits[0][:-4], bits[1]))
-        if out:
-            return out
+        rows = _read_index(lst)
+        if rows:
+            return rows
     d = os.path.join(ROOT, "parts")
-    return [(n[:-4], first_line(os.path.join(d, n)))
-            for n in sorted(os.listdir(d)) if n.endswith(".dat")]
+    cache = os.path.join(ROOT, "parts.index")
+    if os.path.exists(cache) and os.path.getmtime(cache) >= os.path.getmtime(d):
+        rows = _read_index(cache)
+        if rows:
+            return rows
+    names = sorted(n for n in os.listdir(d) if n.endswith(".dat"))
+    if not quiet and len(names) > 500:
+        sys.stderr.write("reading %d part descriptions, once - the index is kept in %s\n"
+                         % (len(names), os.path.basename(cache)))
+        sys.stderr.flush()
+    rows = [(n[:-4], first_line(os.path.join(d, n))) for n in names]
+    try:
+        with open(cache, "w", encoding="utf-8", newline="\n") as f:
+            for num, desc in rows:
+                f.write("%s.dat %s\n" % (num, " ".join(desc.split())))
+    except OSError:
+        pass          # a read-only library is still searchable, just never fast
+    return rows
+
+
+def _read_index(path):
+    """parts.lst and parts.index are the same shape: a file name, then its description."""
+    out = []
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        for line in f:
+            bits = line.strip().split(None, 1)
+            if len(bits) == 2 and bits[0].lower().endswith(".dat"):
+                out.append((bits[0][:-4], bits[1]))
+    return out
 
 
 def find(term, limit=25):
