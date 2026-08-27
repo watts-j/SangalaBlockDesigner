@@ -16,12 +16,24 @@ does not appear in the render.
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 HTML = os.path.join(REPO, "SangalaBlockDesigner.html")
-ROOT = os.path.join(REPO, "LDraw", "ldraw")
+
+# WHERE IT READS AND WHERE IT SHIPS ARE NOW TWO DIFFERENT PLACES, and keeping them apart is the whole
+# of this change. The catalog may sit outside the repository - see ldparts._pick_root - but what the
+# application SHIPS must be inside it, or a snapshot cannot be rendered on a machine that has only
+# this clone. So the closure is computed against whatever catalog is available and the files it names
+# are COPIED into LDraw\ldraw before they are tracked. Where the two are the same folder, which is
+# the case with no catalog checked out, the copy is a no-op and this behaves exactly as it did.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import ldparts
+
+ROOT = ldparts.ROOT                                   # read here
+SHIP = os.path.join(REPO, "LDraw", "ldraw")           # ship to here
 SEARCH = ["parts", "p", os.path.join("parts", "s"), os.path.join("p", "48")]
 
 # Not parts, but the library cannot be used without them: LDConfig.ldr is where the color codes the
@@ -48,13 +60,16 @@ def library_ids():
     nothing at all, without an error. So every library that travels with the application is read
     here too, and its parts ship with it.
     """
-    ids = set()
+    ids, alias = set(), {}
     for folder in ("Projects", "Parts"):
         d = os.path.join(REPO, folder)
         if not os.path.isdir(d):
             continue
         for n in sorted(os.listdir(d)):
-            if not n.lower().endswith(".parts"):
+            # BOTH NAMES, because the application writes ".library" and every file made before it
+            # said ".parts" - one format, two spellings, and a library the bundler cannot see is a
+            # set of parts that render as nothing at all, silently.
+            if not n.lower().endswith((".parts", ".library")):
                 continue
             try:
                 lib = json.load(open(os.path.join(d, n), encoding="utf-8"))
@@ -64,7 +79,15 @@ def library_ids():
             for p in lib.get("parts", []):
                 if p.get("id"):
                     ids.add(str(p["id"]))
-    return ids
+                # AND THE FILE IT WAS MEASURED FROM, which is not always the number it is ordered by.
+                # A design number LDraw files under a different one - 2752 measured as 3747a, 44237
+                # as 2456 - has no file of its own to walk, so the closure reported it missing and
+                # would have shipped without its geometry: the part draws as nothing, silently, which
+                # is the failure this whole script exists to prevent.
+                if p.get("geometry"):
+                    ids.add(str(p["geometry"]))
+                    alias[str(p["id"])] = str(p["geometry"])
+    return ids, alias
 
 
 def part_ids():
@@ -170,9 +193,16 @@ def main(argv):
         root = argv[i + 1] if len(argv) > i + 1 else ROOT
         return verify(root)
     menu = part_ids()
-    lib = library_ids()
+    lib, alias = library_ids()
     ids = sorted(set(menu) | lib)
     files, missing = closure(ids)
+    # A DESIGN NUMBER WITH NO FILE OF ITS OWN IS NOT MISSING GEOMETRY. LDraw has nothing under 2752
+    # or 44237 - it files those parts as 3747a and 2456 - and the library already records which file
+    # was measured. Walking the design number still matters, because most of them ARE present as
+    # "~Moved to" stubs and the application asks by the number it was given; but where there is no
+    # stub and the alias resolved, the part draws perfectly well and saying otherwise would send
+    # somebody hunting for a file that has never existed.
+    missing = [m for m in missing if not (alias.get(m) and alias[m] not in missing)]
     # only the PARTS come from the closure; every primitive ships (see SHIP_ALL_PRIMITIVES above)
     parts = sorted(p for p in files.values()
                    if os.sep + "parts" + os.sep in p + os.sep)
@@ -185,6 +215,7 @@ def main(argv):
         if os.path.exists(p):
             paths.append(p)
     size = sum(os.path.getsize(p) for p in paths)
+    print("catalog read from:         %s" % ROOT)
     print("part numbers in the page: %d" % len(menu))
     print("added by .parts libraries: %d  (%s)"
           % (len(lib - set(menu)), ", ".join(sorted(lib - set(menu))) or "none"))
@@ -196,7 +227,21 @@ def main(argv):
         print("NOT FOUND (the render would silently drop these): %s" % ", ".join(missing))
         return 1
     if "--track" in argv:
-        rel = [os.path.relpath(p, REPO).replace("\\", "/") for p in paths]
+        rel, copied = [], 0
+        for src in paths:
+            inside = os.path.join(SHIP, os.path.relpath(src, ROOT))
+            if os.path.normcase(os.path.abspath(src)) != os.path.normcase(os.path.abspath(inside)):
+                d = os.path.dirname(inside)
+                if not os.path.isdir(d):
+                    os.makedirs(d)
+                if not (os.path.exists(inside) and os.path.getsize(inside) == os.path.getsize(src)
+                        and open(inside, "rb").read() == open(src, "rb").read()):
+                    shutil.copyfile(src, inside)
+                    copied += 1
+            rel.append(os.path.relpath(inside, REPO).replace("\\", "/"))
+        if copied:
+            print("copied %d file%s from %s into the repository"
+                  % (copied, "" if copied == 1 else "s", ROOT))
         # -f because LDraw/ is ignored: the full library stays untracked, this subset does not.
         for i in range(0, len(rel), 200):
             subprocess.run(["git", "-C", REPO, "add", "-f"] + rel[i:i + 200], check=True)

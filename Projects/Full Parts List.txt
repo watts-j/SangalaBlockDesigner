@@ -114,7 +114,11 @@
 2449                       # Slope, 1 x 2 x 3, Inv.
 4287                       # Slope 1 x 3, Inv.
 3660                       # Slope 2 x 2, Inv.
-2752                       # Slope 2 x 3, Inv.
+# LDraw has NO 45-degree 2 x 3 inverted slope - the only ones that size are 33-degree, and
+# 3298 above is the upright 33-degree 3 x 2, so this is its inverted partner. 3747 resolves to
+# 3747a, without ribs between the studs; if the physical part has them it is 3747b, and the
+# ribs are on the underside so neither the footprint nor the height changes.
+2752 -> 3747               # Slope 2 x 3, Inv.   (LDraw files this as 3747)
 
 # Slopes that fall in TWO directions at once, which no rule in the application describes yet.
 # PROVISIONAL, 2026-08-27. `rect` is the neutral declaration: it states the measured box as the
@@ -129,11 +133,14 @@
 3676                       # Slope, 2 x 2, Corner, Inv.
 13349                      # Slope 4 x 2, Corner, Inv.
 
-# A curved slope. PROVISIONAL for the same reason and settled by one measurement: does the curve run
-# along the part's own z, as the ramp does on every 45-degree slope (3040, 3039, 3037, 3665, 3660)?
-# If it does, this becomes `slope` and inherits the swap and the turn. Until that is read off the
-# file rather than guessed from the name, `rect` claims nothing.
-:kind bow "Bow" rect
+# A curved slope. MEASURED 2026-08-27 against the full catalog and no longer provisional: 93273 is
+# 1 x 4 studs and 2 plates, with its length along the part's own z - the same axis the ramp runs on
+# for every 45-degree slope (3040 is 1.00 x 2.00, 3037 is 4.00 x 2.00). So a bow is laid the way a
+# slope is: the footprint swaps to put the curve ACROSS the profile, and the part turns to match.
+# It took two faults in the measuring tool to see this. The bow first measured 1 x 8 studs and 14.49
+# plates, which is why `rect` stood here - a shape that claims nothing was the only safe thing to
+# write against a number nobody believed.
+:kind bow "Bow" slope
 93273                      # Plate w. Bow 1 x 4 x 2/3
 
 # NOTE: the built-in menu offers cone 4589 and this list names 59900. They are two different LDraw

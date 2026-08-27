@@ -257,7 +257,36 @@ def classify(name):
     return "other", "rect"
 
 
-def footprint(shape, w, dd):
+def resting(path, box):
+    """What the part actually stands on, in studs, measured on its own underside.
+
+    LDraw's +Y POINTS DOWN, so a part's underside is its MAXIMUM y, and the geometry sitting on that
+    plane is the face it rests on. Returned as (x, z) in studs, or None where nothing lies flat.
+
+    THIS REPLACES A RULE THAT WAS ONLY EVER RIGHT AT 45 DEGREES. "An inverted slope rests on one
+    column less than its body" was measured on 3665 and 3660, which are 45s, and it is right for
+    them - a 45 ramp spans two studs and hangs over one. A 33-degree ramp spans THREE and hangs over
+    TWO: 4287a is 1 x 3 and rests on 1 x 1, 3747a is 2 x 3 and rests on 2 x 1, and subtracting one
+    column put both of them a stud too deep. That is the same fault that once sat the crane's crest a
+    stud into the plate, and CLAUDE.md already says why it keeps recurring: "no rule of the form 'a
+    slope occupies N columns' can ever be right".
+
+    So the underside is read off the part rather than derived from its angle, and the angle never has
+    to be known. Every inverted slope in the catalog turns out to rest on exactly one stud along its
+    ramp, whatever its pitch - but that is now an observation about the parts, not an assumption the
+    script depends on.
+    """
+    pts = []
+    ldparts._walk(path, ldparts.IDENT, 0, (), lambda x, y, z: pts.append((x, y, z)))
+    floor = [q for q in pts if abs(q[1] - box[3]) < 0.6]
+    if not floor:
+        return None
+    xs = [q[0] for q in floor]
+    zs = [q[2] for q in floor]
+    return ((max(xs) - min(xs)) / ldparts.STUD, (max(zs) - min(zs)) / ldparts.STUD)
+
+
+def footprint(shape, w, dd, rest=None):
     """The measured bounding box -> what the part RESTS ON, which is what a .parts file states.
 
     A BOUNDING BOX CANNOT TELL YOU WHAT A PART STANDS ON, and writing it as though it could is what
@@ -283,7 +312,8 @@ def footprint(shape, w, dd):
     if shape in ("slope", "invslope"):
         w, dd = dd, w
         if shape == "invslope":
-            w = max(1, w - 1)
+            # `rest` is (x, z) in the part's own frame; the swap above has made z the columns.
+            w = max(1, int(round(rest[1]))) if rest else max(1, w - 1)
     return w, dd
 
 
@@ -451,7 +481,7 @@ def build(rows):
         if want_shape:
             shape = want_shape
         raw_w = w
-        w, dd = footprint(shape, w, dd)
+        w, dd = footprint(shape, w, dd, resting(path, box))
         part = {"id": number, "name": american(" ".join(name.split())), "kind": kind,
                 "w": max(1, w), "d": max(1, dd), "h": max(1, h), "shape": shape}
         # THE LABEL THE MENU BUTTON SHOULD CARRY. The application derives one today by capitalizing

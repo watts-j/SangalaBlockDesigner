@@ -1,0 +1,1162 @@
+{
+ "sangala": "parts",
+ "version": 1,
+ "name": "Full Parts List",
+ "parts": [
+  {
+   "id": "3005",
+   "name": "Brick 1 x 1",
+   "kind": "brick",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3004",
+   "name": "Brick 1 x 2",
+   "kind": "brick",
+   "w": 2,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3622",
+   "name": "Brick 1 x 3",
+   "kind": "brick",
+   "w": 3,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3010",
+   "name": "Brick 1 x 4",
+   "kind": "brick",
+   "w": 4,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3009",
+   "name": "Brick 1 x 6",
+   "kind": "brick",
+   "w": 6,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3008",
+   "name": "Brick 1 x 8",
+   "kind": "brick",
+   "w": 8,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3003",
+   "name": "Brick 2 x 2",
+   "kind": "brick",
+   "w": 2,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3002",
+   "name": "Brick 2 x 3",
+   "kind": "brick",
+   "w": 3,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "3001",
+   "name": "Brick 2 x 4",
+   "kind": "brick",
+   "w": 4,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick"
+  },
+  {
+   "id": "44237",
+   "name": "Brick 2 x 6",
+   "kind": "brick",
+   "w": 6,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick",
+   "geometry": "2456"
+  },
+  {
+   "id": "93888",
+   "name": "Brick 2 x 8",
+   "kind": "brick",
+   "w": 8,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Brick",
+   "geometry": "3007"
+  },
+  {
+   "id": "3062",
+   "name": "Brick 1 x 1 Round with Hollow Stud",
+   "kind": "round",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "round",
+   "label": "Round Brick",
+   "geometry": "3062b"
+  },
+  {
+   "id": "87087",
+   "name": "Brick 1 x 1 with Stud on 1 Side",
+   "kind": "knobbed",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "47905",
+   "name": "Brick 1 x 1 with Studs on Two Opposite Sides",
+   "kind": "knobbed",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "26604",
+   "name": "Brick 1 x 1 with Studs on Two Adjacent Sides",
+   "kind": "knobbed",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     1.0,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "4733",
+   "name": "Brick 1 x 1 with Studs on Four Sides",
+   "kind": "knobbed",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     1.0,
+     1.25
+    ],
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.0,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "11211",
+   "name": "Brick 1 x 2 with Two Studs on One Side",
+   "kind": "knobbed",
+   "w": 2,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     1.5,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "52107",
+   "name": "Brick 1 x 2 with Studs on Sides",
+   "kind": "knobbed",
+   "w": 2,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     1.5,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "32952",
+   "name": "Brick 1 x 1 x 1.667 with Studs on 1 Side",
+   "kind": "knobbed",
+   "w": 1,
+   "d": 1,
+   "h": 5,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.5,
+     3.75
+    ]
+   ]
+  },
+  {
+   "id": "7729",
+   "name": "Brick 1 x 1 x 1.667 with Studs on 3 Sides",
+   "kind": "knobbed",
+   "w": 1,
+   "d": 1,
+   "h": 5,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     1.0,
+     1.25
+    ],
+    [
+     1.0,
+     3.75
+    ],
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.5,
+     3.75
+    ],
+    [
+     0.0,
+     1.25
+    ],
+    [
+     0.0,
+     3.75
+    ]
+   ]
+  },
+  {
+   "id": "22885",
+   "name": "Brick 1 x 2 x 1.667 with Studs on 1 Side",
+   "kind": "knobbed",
+   "w": 2,
+   "d": 1,
+   "h": 5,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.5,
+     3.75
+    ],
+    [
+     1.5,
+     1.25
+    ],
+    [
+     1.5,
+     3.75
+    ]
+   ]
+  },
+  {
+   "id": "67329",
+   "name": "Brick 1 x 2 x 1.667 with 8 Studs on 3 Sides",
+   "kind": "knobbed",
+   "w": 2,
+   "d": 1,
+   "h": 5,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.5,
+     3.75
+    ],
+    [
+     1.5,
+     1.25
+    ],
+    [
+     1.5,
+     3.75
+    ],
+    [
+     2.0,
+     1.25
+    ],
+    [
+     2.0,
+     3.75
+    ],
+    [
+     0.0,
+     1.25
+    ],
+    [
+     0.0,
+     3.75
+    ]
+   ]
+  },
+  {
+   "id": "80796",
+   "name": "Brick 1 x 2 x 1.667 with 8 Studs on 2 Opposite Sides",
+   "kind": "knobbed",
+   "w": 2,
+   "d": 1,
+   "h": 5,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     0.5,
+     3.75
+    ],
+    [
+     1.5,
+     1.25
+    ],
+    [
+     1.5,
+     3.75
+    ]
+   ]
+  },
+  {
+   "id": "30414",
+   "name": "Brick 1 x 4 with Studs on Side",
+   "kind": "knobbed",
+   "w": 4,
+   "d": 1,
+   "h": 3,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     0.5,
+     1.25
+    ],
+    [
+     1.5,
+     1.25
+    ],
+    [
+     2.5,
+     1.25
+    ],
+    [
+     3.5,
+     1.25
+    ]
+   ]
+  },
+  {
+   "id": "2434",
+   "name": "Brick 2 x 4 x 2 with Studs on Sides",
+   "kind": "knobbed",
+   "w": 4,
+   "d": 2,
+   "h": 6,
+   "shape": "rect",
+   "label": "Knobbed Brick",
+   "side": [
+    [
+     3.5,
+     1.25
+    ],
+    [
+     2.5,
+     1.25
+    ],
+    [
+     1.5,
+     1.25
+    ],
+    [
+     0.5,
+     1.25
+    ],
+    [
+     3.5,
+     3.75
+    ],
+    [
+     2.5,
+     3.75
+    ],
+    [
+     1.5,
+     3.75
+    ],
+    [
+     0.5,
+     3.75
+    ]
+   ]
+  },
+  {
+   "id": "3024",
+   "name": "Plate 1 x 1",
+   "kind": "plate",
+   "w": 1,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3023",
+   "name": "Plate 1 x 2",
+   "kind": "plate",
+   "w": 2,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate",
+   "geometry": "3023b"
+  },
+  {
+   "id": "3623",
+   "name": "Plate 1 x 3",
+   "kind": "plate",
+   "w": 3,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3710",
+   "name": "Plate 1 x 4",
+   "kind": "plate",
+   "w": 4,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3666",
+   "name": "Plate 1 x 6",
+   "kind": "plate",
+   "w": 6,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3460",
+   "name": "Plate 1 x 8",
+   "kind": "plate",
+   "w": 8,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3022",
+   "name": "Plate 2 x 2",
+   "kind": "plate",
+   "w": 2,
+   "d": 2,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3021",
+   "name": "Plate 2 x 3",
+   "kind": "plate",
+   "w": 3,
+   "d": 2,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3020",
+   "name": "Plate 2 x 4",
+   "kind": "plate",
+   "w": 4,
+   "d": 2,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3795",
+   "name": "Plate 2 x 6",
+   "kind": "plate",
+   "w": 6,
+   "d": 2,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3034",
+   "name": "Plate 2 x 8",
+   "kind": "plate",
+   "w": 8,
+   "d": 2,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "11212",
+   "name": "Plate 3 x 3",
+   "kind": "plate",
+   "w": 3,
+   "d": 3,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3031",
+   "name": "Plate 4 x 4",
+   "kind": "plate",
+   "w": 4,
+   "d": 4,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3032",
+   "name": "Plate 4 x 6",
+   "kind": "plate",
+   "w": 6,
+   "d": 4,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3035",
+   "name": "Plate 4 x 8",
+   "kind": "plate",
+   "w": 8,
+   "d": 4,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3958",
+   "name": "Plate 6 x 6",
+   "kind": "plate",
+   "w": 6,
+   "d": 6,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "3036",
+   "name": "Plate 6 x 8",
+   "kind": "plate",
+   "w": 8,
+   "d": 6,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "41539",
+   "name": "Plate 8 x 8",
+   "kind": "plate",
+   "w": 8,
+   "d": 8,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "92438",
+   "name": "Plate 8 x 16",
+   "kind": "plate",
+   "w": 16,
+   "d": 8,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "91405",
+   "name": "Plate 16 x 16 with Underside Ribs",
+   "kind": "plate",
+   "w": 16,
+   "d": 16,
+   "h": 1,
+   "shape": "rect",
+   "label": "Plate"
+  },
+  {
+   "id": "6141",
+   "name": "Plate 1 x 1 Round",
+   "kind": "roundplate",
+   "w": 1,
+   "d": 1,
+   "h": 1,
+   "shape": "round",
+   "label": "Round Plate"
+  },
+  {
+   "id": "4032",
+   "name": "Plate 2 x 2 Round with Axlehole",
+   "kind": "roundplate",
+   "w": 2,
+   "d": 2,
+   "h": 1,
+   "shape": "round",
+   "label": "Round Plate",
+   "geometry": "4032a"
+  },
+  {
+   "id": "15573",
+   "name": "Plate 1 x 2 with Groove with 1 Center Stud, without Understud",
+   "kind": "jumper",
+   "w": 2,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Jumper",
+   "top": [
+    [
+     1.0,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "34103",
+   "name": "Plate 1 x 3 with 2 Studs Offset",
+   "kind": "jumper",
+   "w": 3,
+   "d": 1,
+   "h": 1,
+   "shape": "rect",
+   "label": "Jumper",
+   "top": [
+    [
+     1.0,
+     0.5
+    ],
+    [
+     2.0,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3040",
+   "name": "Slope Brick 45 2 x 1",
+   "kind": "slope",
+   "w": 2,
+   "d": 1,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ]
+   ],
+   "geometry": "3040b"
+  },
+  {
+   "id": "4286",
+   "name": "Slope Brick 33 3 x 1",
+   "kind": "slope",
+   "w": 3,
+   "d": 1,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "60477",
+   "name": "Slope Brick 18 4 x 1",
+   "kind": "slope",
+   "w": 4,
+   "d": 1,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3039",
+   "name": "Slope Brick 45 2 x 2",
+   "kind": "slope",
+   "w": 2,
+   "d": 2,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3298",
+   "name": "Slope Brick 33 3 x 2",
+   "kind": "slope",
+   "w": 3,
+   "d": 2,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3038",
+   "name": "Slope Brick 45 2 x 3",
+   "kind": "slope",
+   "w": 2,
+   "d": 3,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ],
+    [
+     2.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3037",
+   "name": "Slope Brick 45 2 x 4",
+   "kind": "slope",
+   "w": 2,
+   "d": 4,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ],
+    [
+     2.5,
+     0.5
+    ],
+    [
+     3.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "4161",
+   "name": "Slope Brick 33 3 x 3",
+   "kind": "slope",
+   "w": 3,
+   "d": 3,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ],
+    [
+     2.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3297",
+   "name": "Slope Brick 33 3 x 4",
+   "kind": "slope",
+   "w": 3,
+   "d": 4,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ],
+    [
+     2.5,
+     0.5
+    ],
+    [
+     3.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "4460",
+   "name": "Slope Brick 75 2 x 1 x 3 with Open Stud",
+   "kind": "slope",
+   "w": 2,
+   "d": 1,
+   "h": 9,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ]
+   ],
+   "geometry": "4460a"
+  },
+  {
+   "id": "60481",
+   "name": "Slope Brick 65 2 x 1 x 2 with Symmetric Stud Holder",
+   "kind": "slope",
+   "w": 2,
+   "d": 1,
+   "h": 6,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ]
+   ],
+   "geometry": "60481a"
+  },
+  {
+   "id": "3678",
+   "name": "Slope Brick 65 2 x 2 x 2 without Center Tube",
+   "kind": "slope",
+   "w": 2,
+   "d": 2,
+   "h": 6,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ]
+   ],
+   "geometry": "3678a"
+  },
+  {
+   "id": "30363",
+   "name": "Slope Brick 18 4 x 2",
+   "kind": "slope",
+   "w": 4,
+   "d": 2,
+   "h": 3,
+   "shape": "slope",
+   "label": "Slope",
+   "top": [
+    [
+     0.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3665",
+   "name": "Slope Brick 45 2 x 1 Inverted without Inner Stopper Ring",
+   "kind": "invslope",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "invslope",
+   "label": "Inverted Slope",
+   "geometry": "3665a"
+  },
+  {
+   "id": "2449",
+   "name": "Slope Brick 75 2 x 1 x 3 Inverted",
+   "kind": "invslope",
+   "w": 1,
+   "d": 1,
+   "h": 9,
+   "shape": "invslope",
+   "label": "Inverted Slope"
+  },
+  {
+   "id": "4287",
+   "name": "Slope Brick 33 3 x 1 Inverted with Notch and Thick Front",
+   "kind": "invslope",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "invslope",
+   "label": "Inverted Slope",
+   "geometry": "4287a"
+  },
+  {
+   "id": "3660",
+   "name": "~Slope Brick 45 2 x 2 Inverted without Inner Stopper Ring (Obsolete)",
+   "kind": "invslope",
+   "w": 1,
+   "d": 2,
+   "h": 3,
+   "shape": "invslope",
+   "label": "Inverted Slope",
+   "geometry": "3660a"
+  },
+  {
+   "id": "2752",
+   "name": "Slope Brick 33 3 x 2 Inverted without Ribs between Studs",
+   "kind": "invslope",
+   "w": 1,
+   "d": 2,
+   "h": 3,
+   "shape": "invslope",
+   "label": "Inverted Slope",
+   "geometry": "3747a"
+  },
+  {
+   "id": "13548",
+   "name": "Slope Brick 45 2 x 2 Double Convex with 45 Corner",
+   "kind": "corner",
+   "w": 2,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Corner",
+   "top": [
+    [
+     0.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "48933",
+   "name": "Wedge 4 x 4 Triple with Stud Notches",
+   "kind": "corner",
+   "w": 4,
+   "d": 4,
+   "h": 3,
+   "shape": "rect",
+   "label": "Corner",
+   "top": [
+    [
+     2.5,
+     0.5
+    ],
+    [
+     1.5,
+     0.5
+    ]
+   ]
+  },
+  {
+   "id": "3676",
+   "name": "Slope Brick 45 2 x 2 Inverted Double Convex",
+   "kind": "corner",
+   "w": 2,
+   "d": 2,
+   "h": 3,
+   "shape": "rect",
+   "label": "Corner"
+  },
+  {
+   "id": "13349",
+   "name": "Wedge 4 x 4 Triple Inverted with Ribs between Studs",
+   "kind": "corner",
+   "w": 4,
+   "d": 4,
+   "h": 3,
+   "shape": "rect",
+   "label": "Corner",
+   "top": [
+    [
+     3.5,
+     0.5
+    ],
+    [
+     0.5,
+     0.5
+    ],
+    [
+     2.5,
+     2.5
+    ],
+    [
+     1.5,
+     2.5
+    ],
+    [
+     2.5,
+     3.5
+    ],
+    [
+     1.5,
+     3.5
+    ]
+   ]
+  },
+  {
+   "id": "93273",
+   "name": "Slope Brick Curved 4 x 1 Double",
+   "kind": "bow",
+   "w": 4,
+   "d": 1,
+   "h": 2,
+   "shape": "slope",
+   "label": "Bow",
+   "top": [
+    [
+     0.5,
+     2.0
+    ]
+   ]
+  },
+  {
+   "id": "59900",
+   "name": "Cone 1 x 1 with Stop",
+   "kind": "cone",
+   "w": 1,
+   "d": 1,
+   "h": 3,
+   "shape": "cone",
+   "label": "Cone"
+  }
+ ]
+}
