@@ -1115,12 +1115,7 @@
    "h": 2,
    "shape": "slope",
    "label": "Bow",
-   "top": [
-    [
-     2.0,
-     0.5
-    ]
-   ]
+   "studs": false
   },
   {
    "id": "59900",

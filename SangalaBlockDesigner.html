@@ -2845,7 +2845,19 @@ function silOf(id, iu, iv){
   const m = ldrLoad(id);
   if(!m) return null;                            /* still on its way, or there is no bridge to ask */
   const tri = m.tris;
-  const at = (q,i) => i===1 ? (q[1] > 0 ? q[1] : 0) : q[i];     /* the studs fold onto the top face */
+  /* THE FOLD ASSUMES THE BODY HANGS BELOW THE ORIGIN, and not every part is built that way. LDraw's
+     +Y points down and a brick's origin sits on the TOP of its body, so its studs stand at negative
+     y and clamping them to 0 lays them flat on that top face - which is what this is for, and it is
+     right for 3005, 3023 and almost everything else. 93273's geometry lies ENTIRELY at y <= 0: its
+     body is above its origin, and the clamp flattened the whole part onto one plane, so the profile
+     came out with no height at all, silOf reported "no outline", and the workspace fell back to a
+     hand-drawn wedge that looks nothing like a bow (Watts, 2026-08-27).
+     So the fold applies only where there is something below the origin to fold onto. A part built
+     the usual way is untouched; one built the other way keeps its shape. */
+  let anyBelow = false;
+  for(let i = 0; i < tri.length && !anyBelow; i++)
+    for(let k = 0; k < 3; k++) if(tri[i][k][1] > 0){ anyBelow = true; break; }
+  const at = (q,i) => (i===1 && anyBelow) ? (q[1] > 0 ? q[1] : 0) : q[i];
   let u0=1e9, u1=-1e9, v0=1e9, v1=-1e9;
   for(let i = 0; i < tri.length; i++) for(let k = 0; k < 3; k++){
     const u = at(tri[i][k], iu), v = at(tri[i][k], iv);
@@ -5603,7 +5615,7 @@ cv.addEventListener("drop", e=>{
   const c = cell(e);
   const p = {id:lp.id, name:lp.name||lp.id, w:Math.max(1,lp.w|0), d:Math.max(1,lp.d|0),
              h:Math.max(1,lp.h|0), shape:(lp.shape==="box"?"rect":lp.shape||"rect"),
-             studs:fromKit ? (lp.studs!==false) : (lp.kind!=="tile"),
+             studs:lp.studs!==false && (fromKit || lp.kind!=="tile"),
              /* the studs on its faces and on its top, measured in the library - see drawBrick */
              ...(lp.side&&lp.side.length?{side:lp.side}:{}),
              ...(lp.top&&lp.top.length?{top:lp.top}:{}),
@@ -5725,8 +5737,12 @@ function loadParts(lib, fileName, quiet){
          label is read from the part where it carries one. Derived only where it does not, so every
          library written before today opens exactly as it did. */
       const label = p.label || (kind.charAt(0).toUpperCase()+kind.slice(1));
+      /* A PART MAY SAY IT HAS NO STUDS. Only a kind literally called "tile" was exempt before, so a
+         studless part could not be described at all except by lying about what kind it is - and
+         93273 is catalogued by LEGO as "Double Curved Top (No Studs)". A library written before this
+         carries no such field and is read exactly as it was. */
       KINDS[kind] = {label:label, shape:(p.shape==="box"?"rect":p.shape||"rect"),
-                     h:Math.max(1, p.h|0), sizes:[], studs:(kind!=="tile")};
+                     h:Math.max(1, p.h|0), sizes:[], studs:(p.studs!==false && kind!=="tile")};
       SIZES[kind] = {};
       addKindButton(kind, label);
     }

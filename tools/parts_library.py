@@ -174,6 +174,16 @@ def top_studs(path, box, w, d):
         ax, ay, az = axis
         if abs(ay) < max(abs(ax), abs(az)):
             continue                                   # on a face: that is side_studs' business
+        # A TUBE IS NOT A STUD, AND THE GEOMETRIC TEST ALONE CANNOT SAY SO. stud3 is "Stud Tube
+        # Solid" and stud4 "Stud Tube Open" - the sockets underneath, which the position test was
+        # meant to reject by asking whether they sit near the part's top face. That works while a
+        # part's origin is at the top of its body, which is the usual arrangement. 93273's body lies
+        # ENTIRELY above its origin, so its underside tube measured as near the top and was recorded
+        # as a stud on a part that LEGO catalogs as "Double Curved Top (No Studs)" - which is what
+        # Watts said before anyone measured anything (2026-08-27: "the block still has studs on top.
+        # It should not"). Named outright, since the two files say what they are.
+        if name.startswith("stud3") or name.startswith("stud4"):
+            continue
         if pos[1] > miny + STUD_LDU + 0.5:
             continue                                   # a tube below the top face, not a stud on it
         across = (pos[0] - minx) / ldparts.STUD
@@ -181,7 +191,12 @@ def top_studs(path, box, w, d):
         p = [round(across, 3), round(down, 3)]
         if p not in out:
             out.append(p)
-    return out if 0 < len(out) < w * d else []
+    # THREE ANSWERS, NOT TWO. An empty list meant both "the studs fill the footprint, say nothing"
+    # and "there are no studs at all", and those want opposite things on the page: the first should
+    # draw a stud on every cell, the second none. None is returned as None so the caller can tell.
+    if not out:
+        return None
+    return out if len(out) < w * d else []
 
 
 def _walk_studs(path, xf=IDENT, depth=0, seen=(), out=None):
@@ -507,6 +522,12 @@ def build(rows):
             if face:
                 part["side"] = face
         top = top_studs(path, box, part["w"], part["d"])
+        if top is None:
+            # NOTHING ON TOP. Said outright, because the page's default is to cover a part in studs
+            # and only a kind literally called "tile" was exempt - so a studless part could not be
+            # described at all except by lying about what kind it is.
+            part["studs"] = False
+            top = []
         # AND TURNED WITH THE PART. top_studs measures [across, down] in the part's OWN frame, and a
         # ramped part has had its w and d swapped above to lay the ramp across the profile - so the
         # position was being stated against the wrong pair of edges. 93273 came out with its stud
