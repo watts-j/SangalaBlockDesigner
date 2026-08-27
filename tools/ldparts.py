@@ -62,13 +62,83 @@ def resolve(number, seen=None):
     return path, number, desc
 
 
-def bbox(path, depth=0, seen=None):
-    """Bounding box in LDU as (minx,maxx,miny,maxy,minz,maxz), or None."""
-    seen = seen or set()
+IDENT = (1.0, 0, 0,  0, 1.0, 0,  0, 0, 1.0,  0.0, 0.0, 0.0)   # 9 rotation terms, then 3 of translation
+
+
+def _mul(M, S):
+    """M applied AFTER S, both in the 9+3 form above."""
+    r = [0.0] * 12
+    for i in range(3):
+        for j in range(3):
+            r[i * 3 + j] = M[i * 3] * S[j] + M[i * 3 + 1] * S[3 + j] + M[i * 3 + 2] * S[6 + j]
+        r[9 + i] = M[i * 3] * S[9] + M[i * 3 + 1] * S[10] + M[i * 3 + 2] * S[11] + M[9 + i]
+    return tuple(r)
+
+
+_TEXT = {}
+
+
+def _lines(path):
     key = os.path.normcase(path)
-    if depth > 12 or key in seen:
-        return None
-    seen = seen | {key}
+    if key not in _TEXT:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            _TEXT[key] = f.read().split("\n")
+    return _TEXT[key]
+
+
+def _walk(path, M, depth, chain, take):
+    """Every vertex of a part, in the part's own frame, through all its sub-files."""
+    key = os.path.normcase(path)
+    if depth > 12 or key in chain:
+        return
+    chain = chain + (key,)
+    for line in _lines(path):
+        t = line.split()
+        if not t:
+            continue
+        if t[0] == "1" and len(t) >= 15:
+            try:
+                v = [float(x) for x in t[2:14]]
+            except ValueError:
+                continue
+            sub = locate(" ".join(t[14:]))
+            if not sub:
+                continue
+            S = (v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[0], v[1], v[2])
+            _walk(sub, _mul(M, S), depth + 1, chain, take)
+        elif t[0] in ("2", "3", "4", "5"):
+            n = {"2": 2, "3": 3, "4": 4, "5": 4}[t[0]]
+            try:
+                v = [float(x) for x in t[2:2 + 3 * n]]
+            except ValueError:
+                continue
+            for i in range(n):
+                x, y, z = v[3 * i], v[3 * i + 1], v[3 * i + 2]
+                take(M[0] * x + M[1] * y + M[2] * z + M[9],
+                     M[3] * x + M[4] * y + M[5] * z + M[10],
+                     M[6] * x + M[7] * y + M[8] * z + M[11])
+
+
+def bbox(path, depth=0, seen=None):
+    """Bounding box in LDU as (minx,maxx,miny,maxy,minz,maxz), or None.
+
+    MEASURED FROM THE VERTICES, NOT FROM A SUB-PART'S BOX. This used to recurse, take the box a
+    sub-file reported, and transform its eight corners. That is exact only where the placement is
+    axis-aligned - and every curved part in the library is built from primitives placed at an angle,
+    where the box around a rotated box is bigger than the box around the shape.
+
+    It measured Plate 2 x 2 Round at 2.61 studs across instead of 2.00, which parts_library rounded
+    to 3, and Slope Brick Curved 4 x 1 Double at 8 studs long and 14.49 plates tall instead of 4 and
+    about 2 - that one places a quarter cylinder through a sheared matrix, so the corner box bears
+    almost no relation to the ramp it draws (Watts, 2026-08-27, reading a library where a 1 x 4 bow
+    had become eight studs long). A 1 x 1 round part came out right throughout, which is what made
+    the fault look like nothing at all: it is one full cylinder placed square, so its corners
+    transform exactly.
+
+    Walking the vertices costs re-reading a sub-file once per placement rather than once per part -
+    a stud referenced eight times is now walked eight times, which is the point, since each sits
+    somewhere different. `_TEXT` keeps the file contents so that costs no extra reading.
+    """
     lo = [float("inf")] * 3
     hi = [float("-inf")] * 3
 
@@ -79,38 +149,7 @@ def bbox(path, depth=0, seen=None):
             if v > hi[i]:
                 hi[i] = v
 
-    with open(path, "r", encoding="utf-8", errors="replace") as f:
-        for line in f:
-            t = line.split()
-            if not t:
-                continue
-            if t[0] == "1" and len(t) >= 15:
-                try:
-                    v = [float(x) for x in t[2:14]]
-                except ValueError:
-                    continue
-                sub = locate(" ".join(t[14:]))
-                if not sub:
-                    continue
-                b = bbox(sub, depth + 1, seen)
-                if not b:
-                    continue
-                x, y, z = v[0], v[1], v[2]
-                m = v[3:]
-                for cx in (b[0], b[1]):
-                    for cy in (b[2], b[3]):
-                        for cz in (b[4], b[5]):
-                            take(x + m[0] * cx + m[1] * cy + m[2] * cz,
-                                 y + m[3] * cx + m[4] * cy + m[5] * cz,
-                                 z + m[6] * cx + m[7] * cy + m[8] * cz)
-            elif t[0] in ("2", "3", "4", "5"):
-                n = {"2": 2, "3": 3, "4": 4, "5": 4}[t[0]]
-                try:
-                    v = [float(x) for x in t[2:2 + 3 * n]]
-                except ValueError:
-                    continue
-                for i in range(n):
-                    take(v[3 * i], v[3 * i + 1], v[3 * i + 2])
+    _walk(path, IDENT, depth, (), take)
     if lo[0] == float("inf"):
         return None
     return (lo[0], hi[0], lo[1], hi[1], lo[2], hi[2])
