@@ -5504,18 +5504,17 @@ function loadModel(j){
      slope ◺ / invslope ◹      the white pair, one turned through half a circle
      slopecorner ◣ / invslopecorner ◥   the black pair, the same turn - and ◣ is the mark the
                                Wedge Plate bin used to carry, handed on when that bin was removed
-     plate ▬ / roundplate ▬    THE SAME MARK, at Watts' instruction 2026-08-27: "Use the same icon
-                               for plate for Round plate as well." A round plate is a plate, and the
-                               menu says so. It is the one place two bins share a mark, which is a
-                               departure from one-icon-one-meaning made knowingly and by the person
-                               whose rule it is - the label beside it is what tells them apart.
+     plate ▬ / roundplate ⬬    the same thinness, one square and one round - which is the whole
+                               difference between the two parts. They shared ▬ for a few minutes on
+                               2026-08-27 and the ellipse is better: it says "a plate, but round"
+                               without two bins wearing one mark.
      knobbed ╋ / jumper ┻      a square cross, and the same cross with its bottom limb taken off,
                                which is Watts' own description of the two
    `wedge` HAS NO MARK ANY MORE, deliberately. Its bin is gone, but classify() can still answer
    "wedge" for a library part - the crane's 43712 does - and leaving ◣ here would have given that
    part Slope Corner's mark. One icon, one meaning; the fallback ▪ is the honest answer instead. */
 const KIND_MARK = {brick:"🧱", plate:"▬", slope:"◺", invslope:"◹",
-                   round:"⬤", roundplate:"▬", cone:"▲", tile:"▭",
+                   round:"⬤", roundplate:"⬬", cone:"▲", tile:"▭",
                    slopecorner:"◣", invslopecorner:"◥",
                    knobbed:"╋", jumper:"┻", bow:"◠"};
 /* THE BOW'S ARC IS DRAWN THIN by every font that has it, and beside ⬤ and ▲ it read as a scratch.
