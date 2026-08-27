@@ -148,6 +148,15 @@
   .popmenu button{display:flex;justify-content:space-between;align-items:baseline;gap:.9rem;width:100%;
     border:0;background:none;padding:.5rem .6rem;border-radius:7px;font:inherit;font-size:.92rem;color:#3a2f20;cursor:pointer;text-align:left}
   .popmenu button:hover{background:#efe0c4}
+  /* THE MARK IS ITS OWN COLUMN. Every part-menu button carries one, in a fixed width so the labels
+     line up whatever the glyph, and so a single mark can be sized or weighted without shifting the
+     row. ■ is a MEDIUM square and ⬤ a LARGE circle, so at one size the brick read small beside the
+     round brick (Watts, 2026-08-27: "The square should be larger, more on par with the Round Brick
+     icon"). It is scaled here rather than swapped for ⬛, which is an emoji-presentation character
+     and would pull the emoji font back into a row that has just been cleared of it. */
+  #partmenu .kmark{display:inline-block;width:1.5em;text-align:center;line-height:1}
+  #partmenu button[data-kind="brick"] .kmark{font-size:1.4em}
+  #partmenu button[data-kind="bow"] .kmark{font-weight:700}
   .popmenu button:disabled{opacity:.4;cursor:default}
   .popmenu button:disabled:hover{background:none}
   .popmenu small{color:#8a7658;font-size:.72rem}
@@ -613,12 +622,12 @@
        than appended, so Round Plate lands beside Plate and the two Slope Corners beside the Slopes.
        The cone is a BLACK triangle (&#9650;), not the red one it was: every other mark on this menu
        is a plain black glyph and the cone was the only splash of colour in the row. -->
-  <button data-kind="brick">&#9632; Brick</button>
-  <button data-kind="round">&#11044; Round Brick</button>
-  <button data-kind="plate">&#9644; Plate</button>
-  <button data-kind="slope">&#9722; Slope</button>
-  <button data-kind="invslope">&#9721; Inverted Slope</button>
-  <button data-kind="cone">&#9650; Cone</button>
+  <button data-kind="brick"><span class="kmark">&#9632;</span> Brick</button>
+  <button data-kind="round"><span class="kmark">&#11044;</span> Round Brick</button>
+  <button data-kind="plate"><span class="kmark">&#9644;</span> Plate</button>
+  <button data-kind="slope"><span class="kmark">&#9722;</span> Slope</button>
+  <button data-kind="invslope"><span class="kmark">&#9721;</span> Inverted Slope</button>
+  <button data-kind="cone"><span class="kmark">&#9650;</span> Cone</button>
 </div>
 
 <input type="file" id="fOpen" accept=".block,.model,.library,.parts,.kit,.json" style="display:none">
@@ -5521,10 +5530,11 @@ const KIND_MARK = {brick:"■", plate:"▬", slope:"◺", invslope:"◹",
                    round:"⬤", roundplate:"⬬", cone:"▲", tile:"▭",
                    slopecorner:"◣", invslopecorner:"◥",
                    knobbed:"╋", jumper:"┻", bow:"◠"};
-/* THE BOW'S ARC IS DRAWN THIN by every font that has it, and beside ⬤ and ▲ it read as a scratch.
-   Watts: "Make the Bow line bold." Weight is the mark's, not the button's - the label beside it
-   stays as it is. */
-const KIND_BOLD = {bow:1};
+/* The bow's arc is drawn thin by every font that has it and read as a scratch beside ⬤ and ▲, so it
+   is weighted - and the brick's square is scaled to sit level with the round brick. Both live in the
+   stylesheet now, with the .kmark rules, rather than being set from here: they are how a mark LOOKS,
+   which is the stylesheet's business, and keeping them there means the built-in buttons and the ones
+   a library adds are styled by one rule instead of two mechanisms. */
 /* THE ORDER THE PART MENU READS IN (Watts, 2026-08-27). It ran built-ins first, in the order they
    happened to be written into the markup, and then whatever a library added, in the order the
    library happened to list it - so Round Plate sat at the bottom away from Plate, and the two Slope
@@ -5786,8 +5796,8 @@ function addKindButton(kind, label){
   const b = document.createElement("button");
   b.dataset.kind = kind;
   const mk = document.createElement("span");
+  mk.className = "kmark";
   mk.textContent = KIND_MARK[kind] || "▪";
-  if(KIND_BOLD[kind]) mk.style.fontWeight = "700";
   b.appendChild(mk);
   b.appendChild(document.createTextNode(" " + label));
   b.onclick = (e)=>{ e.stopPropagation(); part={...part, kind:kind}; closeMenus(); applySize(true); };
