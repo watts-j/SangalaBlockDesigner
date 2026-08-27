@@ -1106,7 +1106,13 @@ function shape(p,col,row,fl,face,rot,away){
      width, but the one up the screen is its DEPTH in studs, not its height in plates - and a
      quarter turn swaps those two over. */
   const w=mx(((r&1 ? (p.d||1) : p.w)+oL+oR)*STUD);
-  const h=face ? mx((r&1 ? p.w : (p.d||1))*STUD) : mx(rowsOf(p)*vUnit());
+  /* RELIEF SHOWS THE PLAN, SO A QUARTER TURN SWAPS BOTH ITS SIDES. `w` has always swapped; `h` asked
+     rowsOf, which answers the part's DEPTH in relief and knows nothing about the turn - so a rotated
+     4 x 1 bow was drawn in a 1 x 1 box instead of 1 x 4 (Watts, 2026-08-27, on the side view of the
+     bow). The plan is what is on screen whenever the part is turned onto a face OR the whole build
+     is a relief, and in relief vUnit is a stud, so the unturned case comes out exactly as before. */
+  const planH = (r&1 ? p.w : (p.d||1));
+  const h=(face || mode!=="standing") ? mx(planH*STUD) : mx(rowsOf(p)*vUnit());
   ctx.beginPath();
   /* THE PART'S OWN OUTLINE FIRST, wherever the library can supply one - see silOf. Only a part whose
      silhouette fills its own box falls through to the rounded rectangle below, and only the cone and
@@ -1326,7 +1332,9 @@ function drawBrick(b,ghost){
      of studs where the part has one (Glen, 2026-08-17). */
   const p=b.p, c=COLORS[b.colorIdx], fl=b.flip, fc=faced(b), rt=rotOf(b), aw=facedAway(b);
   /* the plan's two sides, in the order the SCREEN takes them, which a quarter turn swaps */
-  const acr=acrossOf(b), dwn=deepOf2(b), dp=fc ? dwn : rowsOf(p);
+  /* dp is the rows of STUDS on screen; in relief that is the plan's depth AFTER the turn, which is
+     deepOf2 - rowsOf cannot know the turn. See the note on planH in shape(). */
+  const acr=acrossOf(b), dwn=deepOf2(b), dp=(fc || mode!=="standing") ? dwn : rowsOf(p);
   /* the BODY, which for an inverted slope reaches past the stud it rests on */
   const oL=overLeft(p,fl), oR=overRight(p,fl), bcols=acr+oL+oR;
   const x=mx((b.col-oL)*STUD), y=mx(b.row*vUnit()), w=mx(bcols*STUD);
@@ -3668,7 +3676,11 @@ function nearFace(b){
 const quarter = b => (rotOf(b) & 1) === 1;                /* an odd turn swaps the plan's two sides */
 const acrossOf= b => quarter(b) ? (b.p.d||1) : b.p.w;     /* studs across the screen */
 const deepOf2 = b => quarter(b) ? b.p.w : (b.p.d||1);     /* studs down it, before the row grid */
-const rowsFor = b => faced(b) ? Math.max(1, Math.ceil(deepOf2(b)*STUD/vUnit())) : rowsOf(b.p);
+/* AND THE FOOTPRINT AGREES WITH THE DRAWING. rowsFor feeds foot(), which is what decides where a
+   brick may sit and what it collides with - so while this answered rowsOf in relief, a rotated part
+   was drawn one way and placed another. In relief vUnit is a stud, so an unturned part is unchanged. */
+const rowsFor = b => (faced(b) || mode!=="standing")
+  ? Math.max(1, Math.ceil(deepOf2(b)*STUD/vUnit())) : rowsOf(b.p);
 const foot    = b => ({x0:b.col, x1:b.col+acrossOf(b), y0:b.row, y1:b.row+rowsFor(b)});
 /* PARKED: a brick put down on the cork OUTSIDE the plate. Glen, 2026-08-14: "It would be helpful to
    be able to place bricks on the corkboard outside the workspace... I could quickly try two or
