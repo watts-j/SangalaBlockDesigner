@@ -2774,7 +2774,12 @@ function partYaw(p, box){
   /* an inverted slope always lies ramp-across: its footprint is the ONE stud it rests on, and the
      body reaching past that stud is the overhang, not a second column of footprint */
   if(p.shape === "invslope") return 90;
-  if(p.shape === "slope"){
+  /* A BOW TURNS LIKE A SLOPE. Its curve runs along the part's own z exactly as a ramp does - 93273
+     measures 1 x 4 with its length in z - so it needs the same quarter turn to lay that curve across
+     the profile. It is NOT drawn like one: see the stand-in below, where "a slope is always drawn as
+     a slope" would put a wedge on screen for a part that has no wedge in it (Watts, 2026-08-27,
+     turning a bow end-on: "what appears is a triangle, not a rectangle"). */
+  if(p.shape === "slope" || p.shape === "bow"){
     /* THE RAMP IS NOT ALWAYS TWO STUDS. It is for every 45-degree slope - 3040, 3039, 3037 - which
        is why `p.w === 2` held for as long as those were the only slopes the menu offered. 4286 is a
        33-DEGREE slope and its ramp spans THREE: three studs of length over one brick of height

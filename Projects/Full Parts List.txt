@@ -152,7 +152,11 @@
 # It took two faults in the measuring tool to see this. The bow first measured 1 x 8 studs and 14.49
 # plates, which is why `rect` stood here - a shape that claims nothing was the only safe thing to
 # write against a number nobody believed.
-:kind bow "Bow" slope
+# DECLARED `bow`, NOT `slope`. It was `slope` for a day, which bought the swap and the turn and cost
+# the drawing: the page draws a slope AS a slope wherever it cannot use the real outline, so a bow
+# turned end-on came out a wedge - a glyph for a part with no wedge in it. `bow` turns exactly as a
+# slope does and falls back to a plain rounded rectangle, which end-on is the truth.
+:kind bow "Bow" bow
 93273                      # Plate w. Bow 1 x 4 x 2/3
 
 # NOTE: the built-in menu offers cone 4589 and this list names 59900. They are two different LDraw

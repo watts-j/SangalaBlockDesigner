@@ -333,7 +333,7 @@ def footprint(shape, w, dd, rest=None):
         # returns the box for it and nothing changes - checked across all 73 parts of the kit, where
         # 71 came out identical and the two that moved are the two measured wrong.
         w, dd = int(round(rest[0])), int(round(rest[1]))
-    if shape in ("slope", "invslope"):
+    if shape in ("slope", "invslope", "bow"):
         w, dd = dd, w                  # the ramp runs along z, and the profile needs it across
     elif not rest and shape == "invslope":
         w = max(1, w - 1)
