@@ -154,8 +154,15 @@
      round brick (Watts, 2026-08-27: "The square should be larger, more on par with the Round Brick
      icon"). It is scaled here rather than swapped for ⬛, which is an emoji-presentation character
      and would pull the emoji font back into a row that has just been cleared of it. */
-  #partmenu .kmark{display:inline-block;width:1.5em;text-align:center;line-height:1}
-  #partmenu button[data-kind="brick"] .kmark{font-size:1.4em}
+  #partmenu button{justify-content:flex-start}      /* mark then label, hard left - .popmenu's own
+                                                      space-between is for a name and its extension */
+  #partmenu .kmark{display:inline-block;width:1.5em;flex:none;text-align:center;line-height:1}
+  /* SCALED, NOT RESIZED. font-size on the mark widened its column too - `width:1.5em` is measured in
+     the span's OWN size - so the brick's label sat further right than every other, and its larger
+     size moved the baseline the row is aligned on, making it taller as well (Watts, 2026-08-27:
+     "The top item of the menu is out of alignment with the items below it"). A transform changes
+     nothing about layout: same column, same baseline, bigger square. */
+  #partmenu button[data-kind="brick"] .kmark{transform:scale(1.4)}
   #partmenu button[data-kind="bow"] .kmark{font-weight:700}
   .popmenu button:disabled{opacity:.4;cursor:default}
   .popmenu button:disabled:hover{background:none}
