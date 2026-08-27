@@ -20,7 +20,38 @@ import os, sys, io
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "LDraw", "ldraw")
+# WHERE THE CATALOG IS. It lived in exactly one place - LDraw\ldraw beside the application - and
+# that is still the first place looked, because the subset the repository ships must travel with it
+# or a snapshot cannot be rendered offline. But the FULL catalog is 19,000 parts of somebody else's
+# data, versioned on its own schedule, and putting it in this repository would be permanent, would
+# slow every git command on Windows, and would land in Glen's history if this ever merges upstream
+# (Watts, 2026-08-27, choosing a separate repository over all three). So it may also sit elsewhere:
+#   1. wherever SANGALA_LDRAW points - set this to the catalog repository's ldraw folder
+#   2. LDraw\ldraw inside this repository - the bundled subset, which is what ships
+#   3. SangalaLDraw\ldraw beside this repository - a catalog clone checked out as a sibling
+# A folder only counts if it actually holds parts, so an empty or half-cloned one falls through to
+# the next rather than silently answering "NOT IN LIBRARY" for everything.
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _pick_root():
+    here = os.path.join(_REPO, "LDraw", "ldraw")
+    tries = [os.environ.get("SANGALA_LDRAW"), here,
+             os.path.join(os.path.dirname(_REPO), "SangalaLDraw", "ldraw")]
+    best, most = here, -1
+    for t in tries:
+        if not t:
+            continue
+        d = os.path.join(t, "parts")
+        if not os.path.isdir(d):
+            continue
+        n = sum(1 for f in os.listdir(d) if f.endswith(".dat"))
+        if n > most:                # the fullest catalog wins, so a clone beats the bundled subset
+            best, most = t, n
+    return best
+
+
+ROOT = _pick_root()
 SEARCH = ["parts", "p", os.path.join("parts", "s"), os.path.join("p", "48")]
 LDU_MM, STUD, PLATE = 0.4, 20.0, 8.0
 
