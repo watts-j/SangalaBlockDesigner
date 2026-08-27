@@ -231,30 +231,39 @@ def _read_index(path):
 
 
 def find(term, limit=25):
-    """Search descriptions. Whitespace in the term is not significant, so "2 x 3 inverted" finds
-    "Slope Brick 45  2 x  3 Inverted" without anyone having to reproduce the padding."""
-    want = _squash(term)
-    hits = 0
+    """Search descriptions. EVERY WORD MUST APPEAR, in any order.
+
+    It matched one contiguous substring before, which meant the searcher had to guess the exact
+    phrasing AND the exact word order LDraw chose. "2 x 3 inverted" found nothing while the part sat
+    there, because a description is written "Slope Brick 45  2 x  3 Inverted" and one stray word in
+    between - or the size written the other way round - defeats a substring. Falling back to a single
+    broad word then returned the cap and no way to narrow it (Watts, 2026-08-27: "Searching for
+    inverted returned 25 blocks").
+
+    So the term is split and every piece must be somewhere in the description: "inverted 45 3" finds
+    it whichever way round the size is written, and adding a word narrows rather than breaks. The
+    total is reported even when the list is capped, so a search that is still too broad says so
+    instead of looking like the whole answer.
+    """
+    want = _squash(term).split()
+    hits, shown = 0, 0
     for num, desc in catalog():
-        # A TILDE IS TWO DIFFERENT STATEMENTS AND ONLY ONE OF THEM IS NOISE. LDraw marks a redirect
-        # stub "~Moved to 3040b", which nobody wants in a search; it marks an OBSOLETE MOULD the same
-        # way - "~Slope Brick 45 2 x 2 Inverted without Inner Stopper Ring (Obsolete)" - and that is a
-        # real part with real geometry, which the crane's own library already orders under 3660.
-        # Skipping both hid every obsolete part from the search, so a number that exists came back as
-        # "nothing matched" (Watts, 2026-08-27, looking for the 2 x 3 inverted slope). Only the
-        # redirects are skipped now, and the tilde is left on the rest so an obsolete mould still
-        # says so on the line.
         low = desc.lower()
         if low.startswith("~moved to") or low.startswith("~renamed"):
             continue
-        if want in _squash(desc):
-            print("  %-10s %s" % (num, " ".join(desc.split())))
+        # A TILDE IS TWO DIFFERENT STATEMENTS AND ONLY ONE IS NOISE: a redirect stub is skipped just
+        # above, but an OBSOLETE MOULD is marked the same way and is a real part with real geometry -
+        # the crane orders 3660, which is one. Skipping both hid every obsolete part from the search.
+        hay = _squash(desc)
+        if all(w in hay for w in want):
             hits += 1
-            if hits >= limit:
-                print("  ... more (showing the first %d)" % limit)
-                return
+            if shown < limit:
+                print("  %-10s %s" % (num, " ".join(desc.split())))
+                shown += 1
     if not hits:
         print("  nothing matched %r" % term)
+    elif hits > shown:
+        print("  ... %d matches in all; add a word to narrow it" % hits)
 
 
 if __name__ == "__main__":
