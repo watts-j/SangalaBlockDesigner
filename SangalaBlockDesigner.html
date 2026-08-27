@@ -1128,7 +1128,14 @@ function shape(p,col,row,fl,face,rot,away){
     S.loops.forEach(l=>{
       l.forEach((q,i)=>{
         const X = xc + (po.mu ? uc-q[0] : q[0]-uc)*sc;
-        const Y = upright ? y + q[1]*sc : yc + (po.mv ? vc-q[1] : q[1]-vc)*sc;
+        /* HUNG FROM THE TOP OF ITS OWN OUTLINE, not from zero. Upright, a part is hung from the top
+           of its band because that is where a brick's origin sits - its body runs DOWN from there,
+           so its own coordinates start at 0 and y + q[1] lands it in the band. A part whose body is
+           ABOVE its origin has coordinates that run -16..0, and y + q[1] then drew it entirely in
+           the row ABOVE its own (Watts, 2026-08-27, on a bow that came out "approximately half a
+           block tall"). Subtracting the outline's own top puts any part in its band, and for every
+           part built the usual way that top IS 0, so nothing else moves. */
+        const Y = upright ? y + (q[1]-S.v0)*sc : yc + (po.mv ? vc-q[1] : q[1]-vc)*sc;
         i ? ctx.lineTo(X,Y) : ctx.moveTo(X,Y);
       });
       ctx.closePath();
