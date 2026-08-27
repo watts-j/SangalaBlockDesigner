@@ -287,14 +287,51 @@ def footprint(shape, w, dd):
     return w, dd
 
 
+# A SECTION HEADING IN THE LIST, naming the bin every part below it belongs to until the next one:
+#
+#     :kind knobbed "Knobbed Brick" rect
+#
+# the kind, then the label to show on its menu button, then an optional shape. Anything omitted is
+# left to classify() below, which is what an undeclared list (Crane.txt, Starter Set.txt) still uses.
+#
+# WHY THE LIST SAYS THIS RATHER THAN THE SCRIPT INFERRING IT. classify() reads the part's LDraw
+# description, which is the library's own authority on what a part is and is right for the categories
+# it was written for. It cannot be right for a category nobody has read the descriptions of: LDraw
+# calls 87087 "Brick 1 x 1 with Stud on 1 Side", and a rule matching "Knob" - the word the collector
+# uses - would file none of the thirteen knobbed bricks correctly. Rather than write patterns against
+# text nobody has checked, the person who assembled the list states the bin. They know; the library
+# measures. That also makes the file its own answer to how the parts are labeled and sorted, since
+# the order of the sections is the order of the rows in the Library panel.
+DIRECTIVE = re.compile(r'^:kind\s+(\S+)(?:\s+"([^"]*)")?(?:\s+(\S+))?\s*$')
+
+
 def read_list(path):
-    """One part to a line: number[, qty][, color]. Blank lines and # comments are ignored."""
+    """One part to a line: number[ -> ldraw][, qty][, color], under an optional :kind heading.
+
+    THE NUMBER MAY NAME TWO PARTS, and this is not pedantry - it is the only way two of the bricks
+    in the Sangala kit can be ordered AND measured. A design number is what a builder orders by, and
+    LDraw usually files a part under that same number, redirecting from it where the mould has a
+    variant (3040 answers "~Moved to 3040b"). But LEGO has renumbered parts that LDraw still files
+    under the old number with no redirect between them: Brick 2 x 6 is design 44237 and LDraw 2456,
+    Brick 2 x 8 is design 93888 and LDraw 3007. Given one number this script had to choose between an
+    id nobody can order and an id it cannot measure, and it chose to fail. "44237 -> 2456" says both:
+    order the first, measure the second. It is written into the part as `geometry`, exactly as a
+    followed redirect already is.
+    """
     rows = []
+    kind = label = shape = None
     for n, raw in enumerate(open(path, encoding="utf-8"), 1):
         line = raw.split("#")[0].strip()
         if not line:
             continue
+        d = DIRECTIVE.match(line)
+        if d:
+            kind, label, shape = d.group(1), d.group(2), d.group(3)
+            continue
         bits = [b.strip() for b in line.split(",")]
+        number, ldraw = bits[0], None
+        if "->" in number:
+            number, ldraw = [b.strip() for b in number.split("->", 1)]
         qty, color = None, None
         for b in bits[1:]:
             if not b:
@@ -303,17 +340,21 @@ def read_list(path):
                 qty = int(b)
             else:
                 color = b
-        rows.append((n, bits[0], qty, color))
+        rows.append((n, number, ldraw, qty, color, kind, label, shape))
     return rows
 
 
 def build(rows):
     pal = colors()
     parts, problems = [], []
-    for lineno, number, qty, color in rows:
-        path, target, name = ldparts.resolve(number)
+    for lineno, number, ldraw, qty, color, want_kind, want_label, want_shape in rows:
+        # MEASURE THE FILE THE LINE NAMES, ORDER BY THE NUMBER IT LEADS WITH. Where the line gives
+        # only one number the two are the same, and this is what it always did.
+        path, target, name = ldparts.resolve(ldraw or number)
         if not path:
-            problems.append("line %d: %s could not be resolved in the parts library" % (lineno, number))
+            problems.append("line %d: %s could not be resolved in the parts library"
+                            % (lineno, ldraw or number)
+                            + (" (measuring %s for design %s)" % (ldraw, number) if ldraw else ""))
             continue
         box = ldparts.bbox(path)
         if not box:
@@ -326,11 +367,32 @@ def build(rows):
         if has_stud(path):
             tall -= STUD_LDU
         h = int(round(tall / PLATE_LDU))
+        # AN OBSOLETE MOULD IS REPORTED, NOT SWALLOWED. LDraw marks a file that is not a part in its
+        # own right with a leading tilde, and `resolve` only follows "~Moved to" - so a number can
+        # redirect onto a file that is merely obsolete and stop there. 3660 does exactly that, landing
+        # on 3660a, "~Slope Brick 45 2 x 2 Inverted without Inner Stopper Ring (Obsolete)". The part
+        # is still measured, because the geometry is real and the number is the one on the collector's
+        # list; but a design number whose mould LDraw calls obsolete is worth a second look before a
+        # class orders from it, so it is said out loud rather than carried quietly into the library.
+        if name.startswith("~"):
+            problems.append("line %d: %s resolves to %s, which LDraw marks obsolete - %s"
+                            % (lineno, number, target, " ".join(name.split())))
         kind, shape = classify(name)
+        # THE HEADING WINS WHERE IT SPEAKS, classify() answers where it does not - see DIRECTIVE.
+        if want_kind:
+            kind = want_kind
+        if want_shape:
+            shape = want_shape
         raw_w = w
         w, dd = footprint(shape, w, dd)
         part = {"id": number, "name": american(" ".join(name.split())), "kind": kind,
                 "w": max(1, w), "d": max(1, dd), "h": max(1, h), "shape": shape}
+        # THE LABEL THE MENU BUTTON SHOULD CARRY. The application derives one today by capitalizing
+        # the kind, which can only ever produce a single word - "Roundplate" where the catalog says
+        # "Round Plate". Written here so the file is right now and the interface can honor it when
+        # that pass comes; a field the page does not know is ignored rather than a problem.
+        if want_label:
+            part["label"] = want_label
         # Only where the footprint was left as it was measured. A slope's w and d are SWAPPED above
         # to turn the ramp across the screen, and a stud position measured in the part's own frame
         # would then be stated against the wrong edge - so a sloped side-stud part, if one is ever
@@ -343,7 +405,9 @@ def build(rows):
         if top:
             part["top"] = top
         if target.lower() != number.lower():
-            part["geometry"] = target        # the file the measurements came from, when redirected
+            # the file the measurements came from - a followed redirect, or the LDraw number the
+            # line named outright because LEGO and LDraw number this part differently
+            part["geometry"] = target
         if color:
             hit = pal.get(color.lower().replace("_", " "))
             if hit:

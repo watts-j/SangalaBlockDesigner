@@ -1,0 +1,143 @@
+# The Sangala Blocks parts list: every brick in the kit, and the upstream of the .library file.
+#
+#     python tools/parts_library.py "Projects/Full Parts List.txt"
+#
+# From Glen's Full_Parts_List.xlsx, 2026-08-27: 73 parts, listed there by both LEGO Design ID and
+# LDraw part number. The design number is what a builder ORDERS by and is what each line leads with.
+#
+# A :kind heading names the bin every part under it belongs to, the label its menu button should
+# carry, and where it matters the shape the page must draw it as. The ORDER OF THE SECTIONS IS THE
+# ORDER OF THE ROWS in the Library panel, so this file is also how the parts are sorted.
+#
+# NO QUANTITY AND NO COLOR ON ANY LINE. A library is a catalog of shapes - bins, not stock - so a
+# count here would be read as inventory and a color would be read as a decision. Neither is either.
+#
+# The name, the footprint and the height are read from the LDraw library, never typed here.
+
+# The plain bricks, three plates tall.
+:kind brick "Brick"
+3005                       # Brick 1 x 1
+3004                       # Brick 1 x 2
+3622                       # Brick 1 x 3
+3010                       # Brick 1 x 4
+3009                       # Brick 1 x 6
+3008                       # Brick 1 x 8
+3003                       # Brick 2 x 2
+3002                       # Brick 2 x 3
+3001                       # Brick 2 x 4
+44237         -> 2456     # Brick 2 x 6   (LDraw files this as 2456)
+93888         -> 3007     # Brick 2 x 8   (LDraw files this as 3007)
+
+# A cylinder, one stud across - an eye, a joint, a post.
+:kind round "Round Brick"
+3062                       # Brick 1 x 1 Round
+
+# Bricks carrying studs on a FACE as well as on top, which is how anything hangs off the side of a
+# figure - the crane's wings hang on 2434. THE SHAPE IS DECLARED rect DELIBERATELY: the script only
+# measures where the face studs are when the shape is rect, so a knobbed brick left to be classified
+# as something else would arrive as a plain block with its studs missing, which is the whole reason
+# the part is in the kit.
+:kind knobbed "Knobbed Brick" rect
+87087                      # Brick 1 x 1, 1 Knob
+47905                      # Brick 1 x 1, 2 Knobs
+26604                      # Brick 1 x 1, 2 Knobs, Corner
+4733                       # Brick 1 x 1, 5 Knobs
+11211                      # Brick 1 x 2, 2 Knobs
+52107                      # Brick 1 x 2, 4 Knobs
+32952                      # Brick 1 x 1 x 1 2/3, Vert. Knobs
+7729                       # Brick 1 x 1 x 1 2/3, 6 Knobs
+22885                      # Brick 1 x 2 x 1 2/3, 4 Knobs
+67329                      # Brick 1 x 2 x 1 2/3, 8 Knobs
+80796                      # Brick 1 x 2 x 2, 8 Knobs
+30414                      # Brick 1 x 4 x 1, 4 Knobs
+2434                       # Brick 2 x 4 x 2 Knob Stone
+
+# One plate tall. Three plates make a brick, which is the grid the whole workspace is built on.
+:kind plate "Plate"
+3024                       # Plate 1 x 1
+3023                       # Plate 1 x 2
+3623                       # Plate 1 x 3
+3710                       # Plate 1 x 4
+3666                       # Plate 1 x 6
+3460                       # Plate 1 x 8
+3022                       # Plate 2 x 2
+3021                       # Plate 2 x 3
+3020                       # Plate 2 x 4
+3795                       # Plate 2 x 6
+3034                       # Plate 2 x 8
+11212                      # Plate 3 x 3
+3031                       # Plate 4 x 4
+3032                       # Plate 4 x 6
+3035                       # Plate 4 x 8
+3958                       # Plate 6 x 6
+3036                       # Plate 6 x 8
+41539                      # Plate 8 x 8
+92438                      # Plate 8 x 16
+91405                      # Plate 16 x 16
+
+# A circle one plate thick. ITS OWN BIN, not Round Brick (Glen, 2026-08-27: "We need a separate round
+# plates so that they are not created as bricks") - the two are the same shape seen from above and a
+# THIRD of the height, and filing them together drew a plate three plates tall.
+:kind roundplate "Round Plate" round
+6141                       # Plate 1 x 1 Round
+4032                       # Plate 2 x 2 Round
+
+# A plate whose stud is offset, so what stands on it sits half a stud off the lattice. The stud's
+# position is measured into the `top` field.
+# KNOWN: the workspace cannot yet place a part on a half stud. A jumper can be listed and ordered;
+# the offset it exists to create has no expression on the plan until the interface catches up.
+:kind jumper "Jumper" rect
+15573                      # Plate 1 x 2, Jumper, 1 Knob
+34103                      # Plate 1 x 3, Jumper, 2 Knobs
+
+# Ramped along one axis. The standing view is the figure in profile, so the ramp is laid ACROSS the
+# screen - the script swaps the footprint to put it there and the application turns the part to match.
+:kind slope "Slope"
+3040                       # Slope 1 x 2
+4286                       # Slope 1 x 3
+60477                      # Slope 1 x 4 
+3039                       # Slope 2 x 2
+3298                       # Slope 2 x 3, 25°
+3038                       # Slope 2 x 3, 45°
+3037                       # Slope 2 x 4
+4161                       # Slope 3 x 3 
+3297                       # Slope 3 x 4
+4460                       # Slope 1 x 2 x 3
+60481                      # Slope 2 x 1 x 2
+3678                       # Slope 2 x 2 x 2
+30363                      # Slope 2 x 4 x 1
+
+# The same shape reflected: two studs of flat top, the rise across one, standing on ONE. What it
+# RESTS ON is not what it covers, and the body reaching past that stud is the overhang.
+:kind invslope "Inverted Slope"
+3665                       # Slope 1 x 2, Inv.
+2449                       # Slope, 1 x 2 x 3, Inv.
+4287                       # Slope 1 x 3, Inv.
+3660                       # Slope 2 x 2, Inv.
+2752                       # Slope 2 x 3, Inv.
+
+# Slopes that fall in TWO directions at once, which no rule in the application describes yet.
+# PROVISIONAL, 2026-08-27. `rect` is the neutral declaration: it states the measured box as the
+# footprint and asks for no quarter turn, so the piece is never turned the wrong way and the
+# workspace still draws its true outline from the part's own geometry. Two things to check against
+# the built parts before this is settled - which way each one must face in profile, and whether the
+# two INVERTED corners rest on less than their box, as a straight inverted slope does. If they do,
+# this bin needs a footprint rule of its own rather than a shape borrowed from somewhere else.
+:kind corner "Corner" rect
+13548                      # Slope 2 x 2 x 1 Corner
+48933                      # Slope 4 x 2, Corner
+3676                       # Slope, 2 x 2, Corner, Inv.
+13349                      # Slope 4 x 2, Corner, Inv.
+
+# A curved slope. PROVISIONAL for the same reason and settled by one measurement: does the curve run
+# along the part's own z, as the ramp does on every 45-degree slope (3040, 3039, 3037, 3665, 3660)?
+# If it does, this becomes `slope` and inherits the swap and the turn. Until that is read off the
+# file rather than guessed from the name, `rect` claims nothing.
+:kind bow "Bow" rect
+93273                      # Plate w. Bow 1 x 4 x 2/3
+
+# NOTE: the built-in menu offers cone 4589 and this list names 59900. They are two different LDraw
+# files, so unlike the renumbered bricks above they may be two different cones. The measurement will
+# say; if they are the same piece, one of the two numbers should go.
+:kind cone "Cone"
+59900                      # Cone 1 x 1
