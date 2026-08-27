@@ -138,7 +138,16 @@ def _walk(path, M, depth, chain, take):
             S = (v[3], v[4], v[5], v[6], v[7], v[8], v[9], v[10], v[11], v[0], v[1], v[2])
             _walk(sub, _mul(M, S), depth + 1, chain, take)
         elif t[0] in ("2", "3", "4", "5"):
-            n = {"2": 2, "3": 3, "4": 4, "5": 4}[t[0]]
+            # AN OPTIONAL LINE CARRIES FOUR POINTS AND ONLY TWO OF THEM EXIST. Type 5 is
+            # "5 colour x1y1z1 x2y2z2 x3y3z3 x4y4z4": the first pair is the edge, the second pair is
+            # a pair of CONTROL points that decide whether the edge is drawn at all. They sit off the
+            # surface, and counting them as vertices inflated the box - p\1-4cyli.dat, a QUARTER
+            # cylinder, measured the full diameter in both x and z, and 93273 places that primitive
+            # through a shear, so its bow came out eight studs long instead of four. The 48-segment
+            # version of the same primitive measured correctly, which is why only some curved parts
+            # were wrong. The application's own renderer reads types 3 and 4 and ignores 2 and 5, so
+            # this brings the measurement into line with what is actually drawn.
+            n = {"2": 2, "3": 3, "4": 4, "5": 2}[t[0]]
             try:
                 v = [float(x) for x in t[2:2 + 3 * n]]
             except ValueError:
