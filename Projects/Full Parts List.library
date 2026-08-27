@@ -1030,14 +1030,14 @@
   },
   {
    "id": "3660",
-   "name": "~Slope Brick 45 2 x 2 Inverted without Inner Stopper Ring (Obsolete)",
+   "name": "Slope Brick 45 2 x 2 Inverted with Flat Bottom Pin with Inner Stopper Ring",
    "kind": "invslope",
    "w": 1,
    "d": 2,
    "h": 3,
    "shape": "invslope",
    "label": "Inverted Slope",
-   "geometry": "3660a"
+   "geometry": "3660b"
   },
   {
    "id": "2752",
