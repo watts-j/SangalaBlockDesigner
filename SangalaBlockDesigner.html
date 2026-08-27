@@ -613,7 +613,7 @@
        than appended, so Round Plate lands beside Plate and the two Slope Corners beside the Slopes.
        The cone is a BLACK triangle (&#9650;), not the red one it was: every other mark on this menu
        is a plain black glyph and the cone was the only splash of colour in the row. -->
-  <button data-kind="brick">&#129521; Brick</button>
+  <button data-kind="brick">&#9632; Brick</button>
   <button data-kind="round">&#11044; Round Brick</button>
   <button data-kind="plate">&#9644; Plate</button>
   <button data-kind="slope">&#9722; Slope</button>
@@ -5501,6 +5501,10 @@ function loadModel(j){
    simply another size of something already offered. It brings its own button and its own answer to
    whether it carries studs. */
 /* THE MARKS, settled with Watts 2026-08-27. Read as pairs, which is the point of them:
+     brick ■ / plate ▬         one family, U+25A0 and U+25AC: the same black rectangle, square for
+                               the brick and thin for the plate, which is what the two parts are.
+                               The brick was the 🧱 emoji until today - the only picture in a row of
+                               geometry, and the only mark that changed colour with the font.
      slope ◺ / invslope ◹      the white pair, one turned through half a circle
      slopecorner ◣ / invslopecorner ◥   the black pair, the same turn - and ◣ is the mark the
                                Wedge Plate bin used to carry, handed on when that bin was removed
@@ -5513,7 +5517,7 @@ function loadModel(j){
    `wedge` HAS NO MARK ANY MORE, deliberately. Its bin is gone, but classify() can still answer
    "wedge" for a library part - the crane's 43712 does - and leaving ◣ here would have given that
    part Slope Corner's mark. One icon, one meaning; the fallback ▪ is the honest answer instead. */
-const KIND_MARK = {brick:"🧱", plate:"▬", slope:"◺", invslope:"◹",
+const KIND_MARK = {brick:"■", plate:"▬", slope:"◺", invslope:"◹",
                    round:"⬤", roundplate:"⬬", cone:"▲", tile:"▭",
                    slopecorner:"◣", invslopecorner:"◥",
                    knobbed:"╋", jumper:"┻", bow:"◠"};
