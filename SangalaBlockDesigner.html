@@ -76,7 +76,17 @@
   /* Studio's .board, verbatim: no overflow, no min-height, no display. Nothing here can crop the canvas. */
   .board{position:relative;border-radius:12px;padding:14px;border:6px solid #8a6a44;
     box-shadow:inset 0 0 24px rgba(60,40,20,.4)}
-  #build{display:flex;flex-direction:column}   /* column, so the zoom control can pin to the bottom - Studio's #fab */
+  /* column, so the zoom control can pin to the bottom - Studio's #fab.
+     AND NO TALLER THAN THE WORKSPACE. .stage is a grid, and a grid item stretches to the tallest
+     thing in its row - so a long control panel dragged the BOARD down with it, and the workspace
+     came out with a great field of empty cork below the canvas (Watts, 2026-08-27, on opening a
+     73-part library: "the workspace becomes much taller, extending the full length of the library").
+     The canvas has always taken its height from the viewport, `calc(100vh - 178px)`, and could not
+     grow; the frame around it could. The panel now stops at the same height and scrolls its own
+     contents instead, so the Parts list, the Library and the Kit can each be any length without the
+     workspace answering for it. `margin-top:auto` still pins the zoom control to the bottom, which
+     is what the column was for. */
+  #build{display:flex;flex-direction:column;max-height:calc(100vh - 178px);overflow-y:auto}
   /* Positioned against the board's padding box, so it holds its place while the design pans and
      zooms underneath it - a view that scrolls off the edge is worse than none. It opens at the top
      RIGHT and stays there through a resize; once carried somewhere by its bar it holds that spot
