@@ -1,0 +1,18 @@
+{
+ "sangala": "parts",
+ "version": 1,
+ "name": "Bow",
+ "parts": [
+  {
+   "id": "93273",
+   "name": "Slope Brick Curved 4 x 1 Double",
+   "kind": "bow",
+   "w": 4,
+   "d": 1,
+   "h": 2,
+   "shape": "bow",
+   "label": "Bow",
+   "studs": false
+  }
+ ]
+}
