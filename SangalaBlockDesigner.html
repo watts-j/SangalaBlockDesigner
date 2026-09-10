@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-10.204 -->
+<!-- SANGALA_VERSION: 2026-09-10.205 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -253,11 +253,20 @@
     <!-- The SPONGE is Sangala Mosaic's erase mark. Same action, same icon, across the family -
          this had a broom, which is a different picture for the same thing. -->
     <button class="ltbtn" id="tErase" title="Erase: click a brick to take it off the design (Ctrl+Z undoes)">&#129533;<small>Erase</small></button>
-    <!-- LEFT AND RIGHT ARROWS, because that is the axis it mirrors about. It wore the circling-arrows
-         rotate mark, which says the one thing it does not do (Glen, 2026-08-19: "what is now called
-         flip has a rotate symbol - not what it is doing at all"). Named for the axis, as Sangala
-         Studio's own Align menu names it, so a student meets one word in both applications. -->
-    <button class="ltbtn" id="tFlip" title="Flip Horizontal: mirror the part left to right, so a slope faces the other way">&#8596;<small>Flip Horizontal</small></button>
+    <!-- THREE AXIS BUTTONS, ONE ACTION. Each turns the part a quarter turn about one of the
+         FIGURE's own axes, so a builder turns a piece the way they would turn it in their hand and
+         the same press means the same thing whatever attitude the part is already in. They stand
+         where Flip Horizontal, Flip Vertical and Rotate stood, and those three are gone: they turned
+         about three different axes by two different amounts, and two of them wrote one fact under
+         two names, which is how a part came to be drawn one way and placed another.
+         THE NAMES ARE NOT STUDIO'S, and that is worth writing down. Flip Horizontal and Flip
+         Vertical were kept deliberately so a student met one word in both applications; Rotate X, Y
+         and Z drop that. Glen asked for the axis names (2026-09-10) and they say what the buttons
+         do, but if Studio ever grows the same three, the two should be named alike.
+         ONE ICON, THE ROTATE MARK THIS APPLICATION ALREADY USES, on all three - the caption says
+         which axis. Three invented glyphs would be three new pictures for one action, which is the
+         opposite of what the shared vocabulary is for. -->
+    <button class="ltbtn" id="tRotX" title="Rotate X: turn the part a quarter turn about the axis running across the workspace, tipping it toward you">&#8634;<small>Rotate X</small></button>
     <!-- FLIP VERTICAL, and it was called Turn until 2026-08-19. Turn said nothing about which way,
          and every plainer name collided with something: Flip is this pair, Front and Back are which
          side of the figure you stand on, and "studs out" says only what a stud already is. Glen
@@ -271,11 +280,11 @@
          tipping a queen over to signal game over in chess." Describing the result as landing on its
          back invites the reader to picture the part going over backwards, which is neither the
          motion nor how anyone tips anything. -->
-    <button class="ltbtn" id="tFace" title="Flip Vertical: tip the part forward, so its studs face you">&#8597;<small>Flip Vertical</small></button>
+    <button class="ltbtn" id="tRotY" title="Rotate Y: turn the part a quarter turn about the upright axis, counterclockwise seen from above">&#8634;<small>Rotate Y</small></button>
     <!-- Rotate spins a TURNED part a quarter turn counterclockwise, so a wedge laid on the side of
          the figure can point where the wing needs it to. It does nothing to an upright part: a plan
          is the only view a quarter turn means anything in. -->
-    <button class="ltbtn" id="tRot" title="Rotate: turn the part a quarter turn counterclockwise, about the face it is resting on">&#8634;<small>Rotate</small></button>
+    <button class="ltbtn" id="tRotZ" title="Rotate Z: turn the part a quarter turn about the axis running into the workspace, rolling it onto its side">&#8634;<small>Rotate Z</small></button>
     <!-- The two Half Step buttons stood here. They are gone from the Toolbar at Glen's word
          (2026-08-18): "I want to get those half-step buttons off the tool bar. They belong in a
          spinner control that will move a brick toward the front or back in half-step increments."
@@ -793,22 +802,11 @@ function applyFrameScale(){
    no typing. THIS is the default; the Columns/Rows fields are rewritten from `part` by
    syncSizeFields() on load, so their value= attributes cannot set it and must simply agree. */
 let part = {kind:"brick", w:3, d:2, id:"3002", n:"2x3"};   // the part the Toolbar has chosen
-let selCol = 3, flip = false;
-/* Turn: the next part goes down on the SIDE of the figure, studs towards you. Beside `flip`
-   because it is the same kind of state - how the next placement is laid, not a mode. */
-/* The attitude the NEXT part is laid in: null for studs up, or the string a tipped part records.
-   It holds the string rather than a flag because there are two tipped attitudes now, and which one
-   the button means depends on the side the builder is standing on. */
-let faceNext = null;
-/* THE QUARTER TURNS A PART HAS BEEN GIVEN IN THE PLANE IT IS DRAWN IN, 0 to 3, counterclockwise.
-   Glen, 2026-08-17, building the crane's wing: "i have functions named flip and turn, but neither
-   will rotate it counterclockwise to position it for use as a wing." Flip mirrors and Turn lays a
-   part on its face; neither spins it, so a wedge could only ever point one way and a wing has to
-   point at the tail.
-   IT APPLIES TO A TURNED PART ONLY. A turned part shows its PLAN, and a plan is the one view a
-   quarter turn is meaningful in - spinning an upright brick in the profile view would stand it on
-   its end, which is a different part, not a rotation of this one. */
-let rotNext = 0;
+let selCol = 3;
+/* THE ATTITUDE THE NEXT PART IS LAID IN lives with the axis buttons that set it - see `armed`, beside
+   them. `flip`, `faceNext` and `rotNext` stood here and said the same thing three ways; one of them
+   was a mirror, one an attitude and one a quarter turn, and no line of code held the whole answer. */
+
 /* HALF A LAYER BACK, for the part standing on a jumper plate. Glen, 2026-08-17: 15573's single stud
    is centered on a 1 x 2 footprint, so the neck it carries sits on the bird's MIDLINE rather than on
    a stud to one side - "the neck and head can be on the left side or the right side, but not in the
@@ -1180,8 +1178,14 @@ const rampCols  = p => {
   return pairs ? Math.max(1, parseInt(pairs[pairs.length-1],10)||2) : 2;
 };
 const overCols  = p => p.shape==="invslope" ? Math.max(0, rampCols(p)-footCols(p)) : 0;
-const overLeft  = (p,fl) => fl ? 0 : overCols(p);            /* unflipped: the thin end is the left */
-const overRight = (p,fl) => fl ? overCols(p) : 0;
+/* WHICH SIDE THE OVERHANG FALLS ON, TAKEN FROM THE ORIENTATION. It read a stored `flip`, so a part
+   turned by Rotate kept its overhang where Flip would have put it - Glen's 3660b, half a stud clear
+   of the brick beside it. And when the thin end runs into the DEPTH rather than across the screen,
+   NEITHER side gets a column: this used to hand the whole overhang to the left in that case, which
+   widened a quarter-turned inverted slope by a stud it does not have. */
+const overDir   = b => { const R = attOf(b); return -R[2]; };   /* the part's -z, along the figure's x */
+const overLeft  = b => overDir(b) < 0 ? overCols(b.p) : 0;
+const overRight = b => overDir(b) > 0 ? overCols(b.p) : 0;
 
 /* A PLAN TURNED A QUARTER AT A TIME, counterclockwise, on a screen whose y runs DOWN: (u,v) becomes
    (v, W-u), where W is how many studs across the plan is BEFORE that turn - so the box swaps its two
@@ -1192,15 +1196,19 @@ function spin(pts, pw, pd, r){
   for(let k=0;k<((r|0)&3);k++){ const V=W; pts=pts.map(q=>[q[1], V-q[0]]); W = (k&1) ? pw : pd; }
   return pts;
 }
-function shape(p,col,row,fl,face,rot,away){
-  const oL=overLeft(p,fl), oR=overRight(p,fl);
+function shape(b,col,row){
+  const p=b.p, fl=flipOf(b), face=faced(b), rot=rotOf(b), away=facedAway(b);
+  const oL=overLeft(b), oR=overRight(b);
   const r=(rot|0)&3;                              /* about the face it rests on - see rotOf */
   const x=mx((col-oL)*STUD), y=mx(row*vUnit());
   /* Turned onto a face, the part presents its PLAN: the dimension across the screen is still its
      width, but the one up the screen is its DEPTH in studs, not its height in plates - and a
      quarter turn swaps those two over. */
-  const w=mx(((r&1 ? (p.d||1) : footCols(p))+oL+oR)*STUD);
-  const h=face ? mx((r&1 ? p.w : (p.d||1))*STUD) : mx(rowsOf(p)*vUnit());
+  /* THE BAND IS THE PART'S OWN SPAN, in whatever attitude it is in - see spanOf. It read the
+     part's w and d against a quarter turn, which could say nothing about a part rolled onto
+     its side. */
+  const w=mx((acrossOf(b)+oL+oR)*STUD);
+  const h=mx(downOf(b));
   ctx.beginPath();
   /* THE PART'S OWN OUTLINE FIRST, wherever the library can supply one - see silOf. Only a part whose
      silhouette fills its own box falls through to the rounded rectangle below, and only the cone and
@@ -1210,7 +1218,7 @@ function shape(p,col,row,fl,face,rot,away){
      the part is upright, because that is where its origin sits. So a piece that reaches past its own
      footprint - a side-stud brick's studs, an inverted slope's overhang - reaches past it here too. */
   const upright = mode==="standing" && !face;
-  const po = (p.shape==="cone" || p.shape==="round") ? null : planOutline(p, upright, away, fl, r);
+  const po = (p.shape==="cone" || p.shape==="round") ? null : planOutline(p, upright, away, fl, r, attOf(b));
   if(po && !po.sil.full){
     const S=po.sil, sc=mx(LDU), uc=(S.u0+S.u1)/2, vc=(S.v0+S.v1)/2, xc=x+w/2, yc=y+h/2;
     S.loops.forEach(l=>{
@@ -1418,13 +1426,13 @@ function drawBrick(b,ghost){
   /* `dp` is the rows of STUDS the part shows, and for a turned one that is its DEPTH in studs - not
      rowsOf, which is its height in plates. A 1 x 3 brick is three plates tall, so it drew three rows
      of studs where the part has one (Glen, 2026-08-17). */
-  const p=b.p, c=COLORS[b.colorIdx], fl=b.flip, fc=faced(b), rt=rotOf(b), aw=facedAway(b);
+  const p=b.p, c=COLORS[b.colorIdx], fl=flipOf(b), fc=faced(b), rt=rotOf(b), aw=facedAway(b);
   /* the plan's two sides, in the order the SCREEN takes them, which a quarter turn swaps */
-  const acr=acrossOf(b), dwn=deepOf2(b), dp=fc ? dwn : rowsOf(p);
+  const acr=acrossOf(b), dp=fc ? Math.max(1, Math.round(downOf(b)/STUD)) : rowsOf(p);
   /* the BODY, which for an inverted slope reaches past the stud it rests on */
-  const oL=overLeft(p,fl), oR=overRight(p,fl), bcols=acr+oL+oR;
+  const oL=overLeft(b), oR=overRight(b), bcols=acr+oL+oR;
   const x=mx((b.col-oL)*STUD), y=mx(b.row*vUnit()), w=mx(bcols*STUD);
-  const h=fc ? mx(dwn*STUD) : mx(dp*vUnit());   /* turned, it is as tall as it is deep */
+  const h=mx(downOf(b));                        /* the span down the screen, in any attitude */
   /* THE MARKS TAKE THEIR CONTRAST FROM THE BRICK'S OWN COLOUR - see tones() above. A fixed brown
      ring works on Studio's unfilled white shapes and disappears on a filled black one, which is
      how a black brick came out as a blob with nothing legible on it. */
@@ -1441,16 +1449,16 @@ function drawBrick(b,ghost){
      black brick read as a mass: nothing said it was an object sitting on something. */
   const off=Math.max(1, mx(0.7)+depthOf(b)*mx(0.22));
   ctx.save(); ctx.globalAlpha=(ghost?.12:.22)*(seeThrough&&!ghost?seeAlpha:1); ctx.translate(off,off);   /* the shadow fades with its brick */
-  shape(p,b.col,b.row,fl,fc,rt,aw); ctx.fillStyle="#000"; ctx.fill(); ctx.restore();
+  shape(b,b.col,b.row); ctx.fillStyle="#000"; ctx.fill(); ctx.restore();
 
-  shape(p,b.col,b.row,fl,fc,rt,aw);
+  shape(b,b.col,b.row);
   ctx.fillStyle=c.hex; ctx.fill();
   /* an inner bevel: the same outline stroked wide and CLIPPED to the brick, so only its inside
      half shows - the lit top edge of the moulding, which a single flat fill has no room for */
-  ctx.save(); shape(p,b.col,b.row,fl,fc,rt,aw); ctx.clip();
+  ctx.save(); shape(b,b.col,b.row); ctx.clip();
   ctx.strokeStyle=T.bevel; ctx.lineWidth=Math.max(2, mx(0.7));
-  shape(p,b.col,b.row,fl,fc,rt,aw); ctx.stroke(); ctx.restore();
-  shape(p,b.col,b.row,fl,fc,rt,aw);
+  shape(b,b.col,b.row); ctx.stroke(); ctx.restore();
+  shape(b,b.col,b.row);
   ctx.strokeStyle=edge; ctx.lineWidth=1.3; ctx.stroke();
   /* One stud per stud cell, on the 8 mm pitch. Studio's own two exceptions come with the
      convention: a sloped row carries no stud, and a cone has none where a round brick has one. */
@@ -1487,7 +1495,7 @@ function drawBrick(b,ghost){
        took the studs off every part, plain bricks included. Map the point through the same matrix.
        Verified by LOOKING: the console lies here, because from the console the transform has already
        been restored and design coordinates happen to be canvas coordinates. */
-    shape(p,b.col,b.row,fl,fc,rt,aw);
+    shape(b,b.col,b.row);
     const M = ctx.getTransform();
     const onTop = (px,py) => ctx.isPointInPath(M.a*px + M.c*py + M.e, M.b*px + M.d*py + M.f);
     const tops = [];
@@ -1569,7 +1577,7 @@ function drawBrick(b,ghost){
     }
   }
   if(ghost){ ctx.globalAlpha=1; ctx.strokeStyle="#1a5fb4"; ctx.lineWidth=2;
-             shape(p,b.col,b.row,fl,fc,rt,aw); ctx.stroke(); }
+             shape(b,b.col,b.row); ctx.stroke(); }
   ctx.globalAlpha=1;
 }
 
@@ -1633,7 +1641,7 @@ function draw(){
   selShow.forEach(b=>{
     ctx.save();
     ctx.strokeStyle="#1a5fb4"; ctx.lineWidth=Math.max(2, mx(0.8));
-    shape(b.p, b.col, b.row, b.flip, faced(b), rotOf(b), facedAway(b)); ctx.stroke();
+    shape(b, b.col, b.row); ctx.stroke();
     ctx.restore();
   });
   /* THE BOX, in the blue this application marks a selection in, dashed so it reads as a gesture in
@@ -2688,7 +2696,7 @@ function renderMini(){
    against it, so both rebuild on the same events and neither can be left showing an older design. */
 function geoStamp(){
   return mode+"|"+viewBack+"|"+frameScale+"|"+pageKind+"|"+bricks.filter(b=>!parked(b)).map(b=>
-      b.p.id+","+b.col+","+b.row+","+b.base+","+(b.half||0)+","+(b.turn?1:0)+","+(b.rot||0)+","+(b.flip?1:0)+","+b.colorIdx).join(";");
+      b.p.id+","+b.col+","+b.row+","+b.base+","+(b.half||0)+","+(b.turn||"up")+","+(b.rot||0)+","+b.colorIdx).join(";");
 }
 /* KEEP WHICHEVER 3D PICTURE IS UP CURRENT - one call, made by draw(), so an edit cannot reach one
    view and miss the other. Glen, 2026-08-19: "In the 3D view, the depth controls had no effect.
@@ -3276,15 +3284,24 @@ function silOf(id, iu, iv){
    once). The plan's own convention is the one the library measured the stud positions in - across
    from the left edge, down from the far end - so the outline is put in step with the studs drawn on
    it rather than with a matrix the plan never used. */
-function planOutline(p, st, away, fl, rot){
+function planOutline(p, st, away, fl, rot, R){
   if(!p || !p.id) return null;
   const m = ldrLoad(p.id);
   if(!m) return null;
   const yaw = partYaw(p, m.box) + (fl ? 180 : 0) + 90*(rot|0);
   const c = Math.round(Math.cos(yaw*Math.PI/180)), s = Math.round(Math.sin(yaw*Math.PI/180));
-  const iu = c ? 0 : 2, su = st ? (c || s) : (c || -s);
-  const iv = st ? 1 : (c ? 2 : 0);
-  const sv = st ? 1 : (away ? 1 : -1)*(c || s);
+  /* UPRIGHT, THE TWO AXES COME STRAIGHT OFF THE ORIENTATION: whichever of the part's own axes the
+     figure's x lands on runs across the screen, and whichever its y lands on runs down it, each with
+     the sign the matrix gives. That is exactly what the yaw arithmetic below produced for the four
+     attitudes it could reach, and it goes on being right for a part rolled onto its side, which the
+     yaw could not describe at all.
+     THE PLAN VIEW IS LEFT ALONE. Relief and a tipped part take the plan's own convention - measured
+     across from the left edge and down from the far end - which is NOT relief's 3D matrix (that one
+     mirrors). Putting them on the matrix would turn every relief design at once. */
+  const axis = i => { for(let j=0;j<3;j++) if(R && R[i*3+j]) return [j, R[i*3+j]]; return [i, 1]; };
+  const ax = st ? axis(0) : [c ? 0 : 2, (c || -s)];
+  const ay = st ? axis(1) : [(c ? 2 : 0), (away ? 1 : -1)*(c || s)];
+  const iu = ax[0], su = ax[1], iv = ay[0], sv = ay[1];
   const sil = silOf(p.id, iu, iv);
   if(!sil) return null;
   return {sil, mu: su < 0, mv: sv < 0};
@@ -3301,9 +3318,8 @@ function ldrTris(b, p, x0, x1, y0, y1, z0, z1){
   const st = mode === "standing" && !faced(b), fc = faced(b);
   /* widen the band to the BODY before centring the mesh in it: an inverted slope's geometry reaches
      a stud past the footprint it rests on, and centring it on the footprint would squeeze it */
-  x0 -= overLeft(p, b.flip)*STUD; x1 += overRight(p, b.flip)*STUD;
-  let yaw = partYaw(p, m.box);
-  if(b.flip) yaw += 180;                       /* which end of a slope keeps its full height */
+  x0 -= overLeft(b)*STUD; x1 += overRight(b)*STUD;
+  let yaw = partYaw(p, m.box);               /* kept for the relief mapping below, which is not moved */
   /* THE QUARTER TURNS ARE A YAW, and that is the whole of it in 3D. A turned part takes the relief
      mapping, which lays its own vertical INTO the screen - so the screen plane is spanned by the
      part's other two axes, and spinning it on the workspace is a rotation about that vertical. The
@@ -3337,11 +3353,17 @@ function ldrTris(b, p, x0, x1, y0, y1, z0, z1){
      exist, and a reflection here is what once drew the wing wide at the bottom.
      DERIVED HERE, SETTLED BY RENDERING. This matrix has been got wrong on paper twice before; the
      test is the 3D view and the LDraw export agreeing with the plan, not this comment. */
-  const A = st  ? [c*LDU, 0, s*LDU,  s*LDU, 0, -c*LDU,  0, -LDU, 0]
-          : fc  ? (facedAway(b)
-                   ? [ c*LDU, 0, -s*LDU,  0, -LDU, 0,  -s*LDU, 0, -c*LDU]
-                   : [ c*LDU, 0, -s*LDU,  0,  LDU, 0,   s*LDU, 0,  c*LDU])
-                : [c*LDU, 0, s*LDU,  0, LDU, 0,  s*LDU, 0, -c*LDU];
+  /* THE ORIENTATION COMES FROM ONE PLACE NOW - attOf - and this only says where the FIGURE's axes
+     land in the scene: x across, y up the screen, z into it. Two of those mappings, because the two
+     regimes were built with opposite handedness and relief's is not being moved (its determinant is
+     -1 and every relief design was drawn through it).
+     THIS ALSO SETTLES A DISAGREEMENT. The faced matrix here span the part by the FULL yaw - partYaw
+     and flip included - while the exported model spun it by the quarter turn alone, so a tipped
+     slope came out of the two renderers turned opposite ways. The export is the one that was checked
+     against LDView, so both now read attOf and the disagreement cannot be written again. */
+  const S = (st || fc) ? (fc ? [1,0,0, 0,0,1, 0,-1,0] : [1,0,0, 0,0,-1, 0,-1,0]) : null;
+  const A = S ? mul3(S, attOf(b)).map(v=>v*LDU)
+              : [c*LDU, 0, s*LDU,  0, LDU, 0,  s*LDU, 0, -c*LDU];
   const put = q => [A[0]*q[0]+A[1]*q[1]+A[2]*q[2], A[3]*q[0]+A[4]*q[1]+A[5]*q[2], A[6]*q[0]+A[7]*q[1]+A[8]*q[2]];
   let bx0=1e9,by0=1e9,bz0=1e9,bx1=-1e9,by1=-1e9,bz1=-1e9;
   for(let i = 0; i < 8; i++){
@@ -3408,7 +3430,7 @@ function bricksToTris(){
     const x0=b.col*STUD, x1=(b.col+acrossOf(b))*STUD;
     /* Turned, the part stands as tall as it is DEEP and is only as thick as it is HIGH - its own two
        other dimensions, swapped by the quarter turn onto its face, and swapped again by a rotation. */
-    const z1=H-b.row*vu, z0 = fc ? z1 - deepOf2(b)*STUD : H-(b.row+rws)*vu;
+    const z1=H-b.row*vu, z0 = z1 - downOf(b);   /* the span down the screen, in any attitude */
     /* DEPTH RUNS ALONG -Y, because at the camera Studio starts with, +Y is the direction going
        AWAY: built the other way round the studs came out on the back of the model. The face that
        carries the studs is the one nearest the viewer, which is what a relief presents. */
@@ -3435,7 +3457,7 @@ function bricksToTris(){
       const real = ldrTris(b,p,x0,x1,y0,y1,z0,z1);
       if(real){ real.forEach(t2=>mine.push(t2)); }        /* studs and all: the part entire */
       else if(p.shape==="slope" || p.shape==="invslope"){
-        const xHi = b.flip ? x0 : x1, xLo = b.flip ? x1 : x0;   /* unflipped is tall at the right */
+        const fx = flipOf(b), xHi = fx ? x0 : x1, xLo = fx ? x1 : x0;   /* unflipped is tall at the right */
         const inv = p.shape==="invslope";
         const zKeep = inv ? z0 : z1;                   /* an inverted slope keeps its underside */
         const zCut  = inv ? z1 : z0;
@@ -3471,7 +3493,7 @@ function bricksToTris(){
       }
       if(!real && studded(p)){
         for(let cx=0, ac=footCols(p); cx<ac; cx++){
-          if(p.shape==="slope" && (b.flip ? cx===ac-1 : cx===0)) continue;
+          if(p.shape==="slope" && (flipOf(b) ? cx===ac-1 : cx===0)) continue;
           for(let dy=0; dy<d; dy++)
             cylZ(x0+STUD*(cx+0.5), y1-STUD*(dy+0.5), z1, z1+1.8, 2.4, mine);
         }
@@ -3497,7 +3519,7 @@ function bricksToTris(){
     if(real){ real.forEach(t2=>mine.push(t2)); }
     else if(p.shape==="slope" || p.shape==="invslope"){
       /* the ramp runs along the depth (rows); flip swaps which end keeps its full height */
-      const zHi = b.flip ? z0 : z1, zLo = b.flip ? z1 : z0;   /* hi end keeps the full face */
+      const fz = flipOf(b), zHi = fz ? z0 : z1, zLo = fz ? z1 : z0;   /* hi end keeps the full face */
       const inv = p.shape==="invslope";
       const yTip = inv ? y1 : y0;      /* an inverted slope keeps its FRONT face and cuts behind */
       const A=[x0,y0,zHi], B=[x1,y0,zHi], C=[x1,y1,zHi], D=[x0,y1,zHi];      /* full end */
@@ -3530,7 +3552,7 @@ function bricksToTris(){
     }
     if(!real && studded(p)){
       for(let ry=0;ry<d;ry++){
-        if(p.shape==="slope" && (b.flip ? ry===0 : ry===d-1)) continue;
+        if(p.shape==="slope" && (flipOf(b) ? ry===0 : ry===d-1)) continue;
         for(let cx=0;cx<footCols(p);cx++)
           cyl(x0+STUD*(cx+0.5), z1-STUD*(ry+0.5), y0, y0-1.8, 2.4, mine);
       }
@@ -3566,44 +3588,33 @@ $("tErase").onclick =()=>{closeMenus();setTool(tool==="erase"?"select":"erase");
    `armOrSel` is the pair of them: the selected brick if there is one, otherwise the arming. Both the
    press and the light ask it, so the light cannot describe one while the press changes the other. */
 const selNow = () => (selBrick && bricks.indexOf(selBrick)>=0) ? selBrick : null;
-function syncFlip(){ const b=selNow(); $("tFlip").classList.toggle("on", b ? !!b.flip : flip); }
-$("tFlip").onclick  =()=>{
+/* THE THREE AXIS BUTTONS. Each is a quarter turn of the part about one of the FIGURE's own axes -
+   x across the workspace, y up it, z into it - so the builder turns a piece the way they would turn
+   it in their hand, and the same press means the same thing whichever way the part is already lying.
+   They replace Flip Horizontal, Flip Vertical and Rotate, which did three different things: a HALF
+   turn about y, a quarter about x, a quarter about y. Two of them wrote one fact by two names, and
+   that is what let a part be drawn one way and placed another.
+   IT ACTS ON THE SELECTED BRICK, and arms the next placement when nothing is selected - the rule the
+   three buttons already followed, and Glen's ("it should affect the selected brick", 2026-08-17).
+   THE LIGHT SAYS "NOT SQUARE", not which button did it: with twenty-four attitudes and three
+   buttons, no one button owns the state any more. So all three light while the part is off square.
+   NO RE-SETTLING. Turning changes the cells a part claims, and settle() would compare the brick with
+   itself and push it a layer forward. It stays in the layer it is in. */
+let armed = {turn:"up", rot:0};        /* the attitude the NEXT part is laid in */
+function syncAxes(){
+  const b=selNow(), t=b?turnOf(b):armed.turn, r=b?rotOf(b):armed.rot;
+  const off = (t==="up" && !r);
+  ["tRotX","tRotY","tRotZ"].forEach(id=>$(id).classList.toggle("on", !off));
+}
+function spinBy(axis){
   const b = selNow();
-  if(b){ b.flip = !b.flip; commit(); }
-  else flip = !flip;
-  syncFlip(); draw();
-};
-/* TURN ACTS ON THE BRICK YOU HAVE SELECTED, and only sets the state for the next placement when
-   nothing is selected. Glen, 2026-08-17: "turn doesn't turn it" - he had the eye already on the head,
-   selected it, pressed Turn, and nothing happened, because this only armed the NEXT placement the way
-   Flip does. Selecting a thing and acting on it is how the rest of the panel works.
-   It does NOT re-settle the brick: turning changes the cells it claims, and settle() would compare
-   the brick against itself and push it a layer forward. It stays in the layer it is in.
-   No message either way: the button stays lit, which is the state. */
-/* THE BUTTON KEEPS ONE MEANING - tip it toward me - AND THE STORED VALUE FOLLOWS THE SIDE YOU ARE
-   ON. From the front that is studs to the front; from the far side it is studs to the back, which is
-   what a wing on that side needs and what could not be expressed until today. So the builder never
-   thinks about which value is being written: they walk round and tip it, exactly as they would with
-   the part in their hand. */
-const tipHere = () => viewBack ? "back" : "face";
-function syncFace(){ const b=selNow(); $("tFace").classList.toggle("on", b ? faced(b) : !!faceNext); }
-$("tFace").onclick  =()=>{
-  const b = selNow();
-  if(b){ b.turn = faced(b) ? undefined : tipHere(); commit(); }
-  else faceNext = faceNext ? null : tipHere();
-  syncFace(); draw();
-};
-/* ROTATE FOLLOWS TURN AND FLIP: it acts on the brick you have selected so the result is on the plan
-   at once, and with nothing selected it arms the next placement - see the note on Flip above.
-   IT WORKS ON ANY PART: about the vertical for one standing upright, about the viewing axis for one
-   laid on its face. The light is out at square and lit at any quarter turn. */
-function syncRot(){ const b=selNow(); $("tRot").classList.toggle("on", b ? !!((b.rot|0)&3) : !!rotNext); }
-$("tRot").onclick   =()=>{
-  const b = selNow();
-  if(b){ b.rot = (((b.rot|0)+1) & 3); commit(); }
-  else rotNext = (rotNext+1) & 3;
-  syncRot(); draw();
-};
+  if(b){ const n = spun(b, axis); b.turn = n.turn==="up" ? undefined : n.turn; b.rot = n.rot; commit(); }
+  else { const n = spun({p:cur(), turn:armed.turn, rot:armed.rot}, axis); armed = n; }
+  syncAxes(); draw();
+}
+$("tRotX").onclick = ()=>spinBy("x");
+$("tRotY").onclick = ()=>spinBy("y");
+$("tRotZ").onclick = ()=>spinBy("z");
 /* HALF STEP follows the same rule as the three above: it acts on the selected brick, and with
    nothing selected it arms the next placement.
    STANDING ONLY. In relief the layers are plates coming towards the viewer and a half plate is not
@@ -4013,9 +4024,7 @@ const thick = p => mode==="standing" ? (p.d||1) : (p.h||1);
    The fraction is exact rather than tidy: a plate lying on its side is 0.4 of a stud and the layer
    grid is studs, exactly as the ROW grid cannot hold a turned part either. `base` has taken
    fractions since the half step, so the arithmetic already carries it. */
-const thickB = b => mode!=="standing" ? (b.p.h||1)
-               : faced(b) ? (b.p.h||1)*PLATE/STUD
-               : deepOf2(b);
+const thickB = b => mode!=="standing" ? (b.p.h||1) : deepOf2(b);
 /* A PART TURNED ONTO A FACE IS EXACTLY WHAT RELIEF ALREADY DRAWS. Glen, 2026-08-17, on the eye and
    then on the wing: "There is a flat plate that goes onto the side of the bird. This is the same
    issue as the eye." Relief lays every part with its studs towards the viewer - that is what a relief
@@ -4054,6 +4063,82 @@ const facedAway = b => mode==="standing" && b && b.turn==="back";
    it on its end. It would not: standing it on its end is a rotation about a HORIZONTAL axis, which
    nothing here offers. A yaw only swaps which way the footprint runs. */
 const rotOf   = b => b ? ((b.rot|0) & 3) : 0;
+/* ---------- ONE ORIENTATION, AND EVERY VIEW READS IT (Glen, 2026-09-10) ----------
+   THREE BUTTONS THAT EACH TURN THE PART A QUARTER TURN ABOUT ONE OF THE FIGURE'S OWN AXES, in place
+   of Flip Horizontal, Flip Vertical and Rotate. Those three did three different things - a half turn
+   about the vertical, a quarter turn about the horizontal, a quarter turn about the vertical again -
+   and two of them wrote the SAME turn by two different names: `flip` and `rot` both added into one
+   yaw, so flip with no turn was the same orientation as Rotate pressed twice. Nothing downstream
+   knew that. `overLeft` read `flip` alone, so a part turned by Rotate kept its overhang on the side
+   Flip would have put it, and Glen's 3660b sat half a stud clear of the brick beside it.
+   There is one orientation now. `turn` names WHERE THE STUDS POINT - up, face, back, down, left,
+   right, the six of them - and `rot` is the quarter turn about that direction. Six by four is
+   twenty-four, which is every way a brick can be set down square, each of them named once.
+   THE OLD ATTITUDES COME THROUGH UNCHANGED, and that is checked rather than asserted: for all
+   sixteen combinations of turn, rot, flip and partYaw the matrix below is the one the LDraw export
+   wrote before, to the last sign. A file carrying `flip:true` is read as half a turn (rot + 2),
+   which is what flip WAS; nothing is rewritten on disk and no design moves - except the parts that
+   were already drawn one way and placed another, which is the defect this removes.
+   PARTYAW IS A PRE-TURN OF THE PART'S OWN, applied on the right so a slope's ramp lies across the
+   profile, and it is suppressed for a part tipped onto its face exactly as it was before today. That
+   is the one asymmetry left in here; it is carried forward deliberately, because changing it would
+   turn every faced slope in every saved design a quarter circle. */
+const TURNS  = ["up","face","back","down","left","right"];
+const A_TURN = {                       /* part axes -> figure axes: x right, y DOWN, z away from you */
+  up:   [1,0,0,  0,1,0,   0,0,1],
+  face: [1,0,0,  0,0,-1,  0,1,0],      /* studs toward the viewer */
+  back: [1,0,0,  0,0,1,   0,-1,0],
+  down: [1,0,0,  0,-1,0,  0,0,-1],
+  left: [0,1,0,  -1,0,0,  0,0,1],
+  right:[0,-1,0, 1,0,0,   0,0,1]
+};
+const mul3 = (A,B) => { const O=new Array(9);
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++)
+    O[r*3+c] = A[r*3]*B[c] + A[r*3+1]*B[3+c] + A[r*3+2]*B[6+c];
+  return O; };
+const yawM = k => { const c=[1,0,-1,0][k&3], s=[0,1,0,-1][k&3]; return [c,0,s, 0,1,0, -s,0,c]; };
+const turnOf = b => { const t = b && b.turn; return TURNS.indexOf(t)>=0 ? t : "up"; };
+function attOf(b){
+  const p=b.p, m=ldrMesh[p.id];
+  const pre = faced(b) ? 0 : (Math.round(partYaw(p, m && m.box)/90) & 3);
+  return mul3(mul3(A_TURN[turnOf(b)], yawM(rotOf(b))), yawM(pre));
+}
+/* WHICH WAY THE PART'S THIN END POINTS, which is all `flip` ever meant to the drawing and to the
+   overhang. Taken from the orientation rather than stored beside it, so a part cannot be drawn
+   facing one way and placed facing the other. The part's own -z is its thin end; if that lands
+   pointing right the piece reads as flipped. When the thin end runs into the DEPTH instead, no
+   column is added either side and the part's own x says which way its plan is laid. */
+const flipOf = b => { const R = attOf(b); return R[2] < 0 || (R[2] === 0 && R[0] < 0); };
+/* THE TWENTY-FOUR, LOOKED UP BY THEIR MATRIX, so a quarter turn about a figure axis can be turned
+   back into the (turn, rot) a brick stores. Built once. */
+const ORIENT = (function(){ const m=Object.create(null);
+  TURNS.forEach(t=>{ for(let r=0;r<4;r++) m[mul3(A_TURN[t], yawM(r)).join(",")] = {turn:t, rot:r}; });
+  return m; })();
+const R_AXIS = {x:[1,0,0, 0,0,-1, 0,1,0], y:[0,0,1, 0,1,0, -1,0,0], z:[0,-1,0, 1,0,0, 0,0,1]};
+/* A quarter turn about one of the FIGURE'S axes, composed on the LEFT so the part's own partYaw
+   pre-turn on the right is untouched. x tips it forward, which is what Flip Vertical did; y is the
+   yaw Rotate did; z rolls it onto its side, which nothing offered before. */
+function spun(b, axis){
+  const now = mul3(A_TURN[turnOf(b)], yawM(rotOf(b)));
+  return ORIENT[mul3(R_AXIS[axis], now).join(",")];
+}
+/* HOW FAR THE FOOTPRINT REACHES ALONG EACH OF THE FIGURE'S AXES, in millimetres. One rule for all
+   twenty-four attitudes, in place of the pair of special cases that served the three: the part's own
+   box is footprint studs across, height in plates, depth in studs, and the orientation says where
+   each of those lands. For every attitude the old code could reach this returns exactly what the old
+   code returned. */
+const footBox = b => [footCols(b.p)*STUD, (b.p.h||1)*PLATE, (b.p.d||1)*STUD];
+/* THE CELLS ARE MEASURED WITHOUT partYaw, and that distinction matters. partYaw turns the part's own
+   MESH so a slope's ramp lies across the profile; the w and d a part is filed under are already
+   stated the way the plan reads them, across first. Turning the footprint box by partYaw as well
+   swapped a slope's two sides. So the span takes the attitude alone, and the outline - which is
+   measured off the mesh - takes the attitude with partYaw in it. */
+const attCell = b => mul3(A_TURN[turnOf(b)], yawM(rotOf(b)));
+function spanOf(b){
+  const R=attCell(b), e=footBox(b), s=[0,0,0];
+  for(let i=0;i<3;i++) s[i] = Math.abs(R[i*3])*e[0] + Math.abs(R[i*3+1])*e[1] + Math.abs(R[i*3+2])*e[2];
+  return s;
+}
 /* WHERE A PART ACTUALLY SITS THROUGH THE FIGURE, layer and half step together. Everything that puts
    geometry in depth asks this - the 3D view, the LDraw export, the drawing order and the shadow - so
    a part on the midline cannot be shown in one place and exported in another. */
@@ -4068,7 +4153,7 @@ const depthOf = b => (b.base||0) + halfOf(b);
    which needs it to know which part is in front of which. */
 function thickToward(b){
   const p = b.p;
-  return faced(b) ? (p.h||1)*PLATE : (mode==="standing" ? deepOf2(b)*STUD : (p.h||1)*PLATE);
+  return mode==="standing" ? spanOf(b)[2] : (p.h||1)*PLATE;
 }
 /* WHERE THE PART'S NEAREST SURFACE IS, in layers, from where the viewer is standing.
    `base` marks the face a part is MOUNTED BY, and that is not the face you see: a part reaches
@@ -4093,9 +4178,13 @@ function nearFace(b){
   return viewBack ? -rearB(b) : frontB(b);   /* walk round and the far surface becomes the near one */
 }
 const quarter = b => (rotOf(b) & 1) === 1;                /* an odd turn swaps the plan's two sides */
-const acrossOf= b => quarter(b) ? (b.p.d||1) : footCols(b.p);  /* studs of footprint across the screen */
-const deepOf2 = b => quarter(b) ? b.p.w : (b.p.d||1);     /* studs down it, before the row grid */
-const rowsFor = b => faced(b) ? Math.max(1, Math.ceil(deepOf2(b)*STUD/vUnit())) : rowsOf(b.p);
+/* THE CELLS A PART CLAIMS, from its span rather than from a table of attitudes - see spanOf. A cell
+   is a whole cell, so a part whose span is not a whole number of them rounds UP: a brick on its side
+   is 9.6 mm across, which is one stud and a fifth, and it claims two. */
+const acrossOf= b => Math.max(1, Math.ceil(spanOf(b)[0]/STUD - 1e-6));   /* cells across the screen */
+const downOf  = b => spanOf(b)[1];                        /* mm down the screen */
+const deepOf2 = b => spanOf(b)[2]/STUD;                   /* studs into the figure */
+const rowsFor = b => Math.max(1, Math.ceil(downOf(b)/vUnit() - 1e-6));
 const foot    = b => ({x0:b.col, x1:b.col+acrossOf(b), y0:b.row, y1:b.row+rowsFor(b)});
 /* PARKED: a brick put down on the cork OUTSIDE the plate. Glen, 2026-08-14: "It would be helpful to
    be able to place bricks on the corkboard outside the workspace... I could quickly try two or
@@ -4268,7 +4357,7 @@ function syncGroup(){
 }
 function drawSelection(){
   const on = !!selBrick && bricks.indexOf(selBrick)>=0;
-  syncFace(); syncFlip(); syncRot(); syncHalf(); syncGroup();   /* the five follow the selection */
+  syncAxes(); syncHalf(); syncGroup();          /* the controls follow the selection */
   /* A BUNDLE READS AS A COUNT. With several bricks selected there is no one part to name, and no
      one answer for Flip or Rotate - those stay dark, Studio's behaviour for a multi-selection.
      DEPTH is the exception, decided 2026-08-26 (Glen, testing the group paste live with Jo Watts):
@@ -4750,7 +4839,7 @@ cv.addEventListener("mousemove",e=>{
   if(panDrag || moveDrag) return;                          /* panning or moving, not building */
   if(view3D){ if(hover){hover=null;draw();} return; }      /* looking, not building */
   if(tool!=="place"){ if(hover){hover=null;draw();} return; }
-  const c=cell(e); hover=settle({p:cur(),colorIdx:selCol,col:anchor(c,cur(),rotNext),row:c.row,flip:flip,turn:faceNext||undefined,rot:rotNext}); draw();
+  const c=cell(e); hover=settle({p:cur(),colorIdx:selCol,col:anchor(c,cur(),armed.rot),row:c.row,turn:armed.turn==="up"?undefined:armed.turn,rot:armed.rot}); draw();
 });
 cv.addEventListener("mouseleave",()=>{hover=null;draw();});
 cv.addEventListener("click",e=>{
@@ -4762,7 +4851,7 @@ cv.addEventListener("click",e=>{
     bricks.splice(i,1); draw(); commit(); return;
   }
   if(tool!=="place") return;
-  const nb=settle({p:cur(),colorIdx:selCol,col:anchor(c,cur(),rotNext),row:c.row,flip:flip,turn:faceNext||undefined,rot:rotNext});
+  const nb=settle({p:cur(),colorIdx:selCol,col:anchor(c,cur(),armed.rot),row:c.row,turn:armed.turn==="up"?undefined:armed.turn,rot:armed.rot});
   bricks.push(nb);
   /* THE BRICK JUST PLACED BECOMES THE SELECTED ONE, which is what makes placing and moving read the
      same: after either, the block above names the brick and gives its layer, and the message line
@@ -4788,7 +4877,7 @@ function serializeState(){
     guide: guideRaw.map(g=>({...g, poly:(g.poly||[]).map(q=>[q[0],q[1]]),
                                    holes:(g.holes||[]).map(h=>h.map(q=>[q[0],q[1]]))})),
     bricks: bricks.map(b=>({ p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-                             flip:b.flip, base:b.base, turn:b.turn, rot:b.rot, half:b.half,
+                             base:b.base, turn:b.turn, rot:b.rot, half:b.half,
                              group:b.group, gpath:b.gpath?b.gpath.slice():undefined,
                              gnames:b.gnames?b.gnames.slice():undefined })) };
 }
@@ -4816,7 +4905,7 @@ function restoreState(st){
   groupSeq = st.groupSeq || 0;
   groupOrder = (st.groupOrder||[]).slice();
   bricks=(st.bricks||[]).map(b=>({ p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-                                   flip:b.flip, base:b.base, turn:b.turn, rot:b.rot, half:b.half,
+                                   base:b.base, turn:b.turn, rot:b.rot, half:b.half,
                                    group:b.group, gpath:b.gpath?b.gpath.slice():undefined,
                                    gnames:b.gnames?b.gnames.slice():undefined }));
   selBrick=null; selMulti=[];              /* the old objects are gone; nothing may point at them */
@@ -4888,7 +4977,7 @@ function copyBrick(){
   const set=selectedBricks();
   if(!set.length){ say("Select a brick first, then Ctrl+C."); return; }
   clipSet=set.map(b=>({from:b,
-    snap:{p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row, flip:b.flip,
+    snap:{p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
           base:b.base, turn:b.turn, rot:b.rot, half:b.half,
           gpath:gpathOf(b).slice(), gnames:gnamesOf(b).slice()}}));
   /* THE CLIPBOARD REMEMBERS THE BRICKS, NOT JUST THEIR READINGS - and the paste follows them. The
@@ -5018,7 +5107,7 @@ function pasteBrick(){
   const nbs = srcs.map(src=>{
     const gp=gpathOf(src).map(id=>{ if(!(id in gmap)) gmap[id]=++groupSeq; return gmap[id]; });
     const gn=gnamesOf(src).slice();
-    return {p:{...src.p}, colorIdx:src.colorIdx, col:src.col+step, row:src.row, flip:src.flip,
+    return {p:{...src.p}, colorIdx:src.colorIdx, col:src.col+step, row:src.row,
             base:src.base, turn:src.turn, rot:src.rot, half:src.half,
             group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
             gnames:gn.some(x=>x)?gn:undefined};
@@ -5206,7 +5295,6 @@ function designJSON(){ return (
     ...(groupOrder.length?{groupOrder:groupOrder}:{}),
     bricks:bricks.map(b=>({id:b.p.id,name:b.p.name,w:b.p.w,d:b.p.d||1,h:b.p.h,shape:b.p.shape,
                            color:COLORS[b.colorIdx].code,col:b.col,row:b.row,base:b.base||0,
-                           flip:b.flip,
                            /* written only when the part is turned, so an upright design is unchanged */
                            ...(b.turn?{turn:b.turn}:{}),
                            /* likewise only when it has been given one - see rotOf */
@@ -5418,7 +5506,7 @@ function toLdr(){
     if(parked(b)) return;                 /* a candidate on the cork is not part of the design */
     const p=b.p, w=footCols(p), d=p.d||1, h=p.h||1;
     /* placed by the middle of its BODY, not of its footprint - see `overCols` */
-    const oL=overLeft(p,b.flip), oR=overRight(p,b.flip);
+    const oL=overLeft(b), oR=overRight(b);
     const bx=((b.col - oL) + (w + oL + oR)/2)*LDU_STUD;   /* where the cell's centre is */
     let y, bz;
     /* STANDING NOW HAS DEPTH, and this wrote bz=0 - every part at one depth, so a snapshot of a
@@ -5438,8 +5526,9 @@ function toLdr(){
        snapshot is the same design seen by another renderer, and a part turned in one and not the
        other is the defect Glen found in the crest. A quarter turn is (0,0,1 / 0,1,0 / -1,0,0). */
     const box = ldrMesh[p.id] && ldrMesh[p.id].box;
-    const yaw = (partYaw(p, box) + (b.flip ? 180 : 0) + 90*rotOf(b)) * Math.PI/180;
-    const c = Math.round(Math.cos(yaw)), s = Math.round(Math.sin(yaw));
+    /* THE ONE ORIENTATION, and c and s are read back OUT of it for the geometry correction below,
+       which needs to carry the part's own centre through the same turn. */
+    const RM = attOf(b);
     /* A PART'S ORIGIN IS NOT THE MIDDLE OF ITS FOOTPRINT, and for every 45-degree slope it is half
        a stud away from it: 3040, 3665, 3039 and 3660 all measure z from -30 to +10, because LDraw
        bases a slope on ONE of its studs rather than on the middle of the two it spans. Bricks,
@@ -5498,8 +5587,7 @@ function toLdr(){
          same place but reverses x, which pointed the wing at the head instead of the tail. The 3D
          view carries the identical correction; the two are checked against each other by rendering.
          Determinant +1 either way: a reflected wedge is a part that does not exist. */
-      const M = facedAway(b) ? [ rc,0, rs, -rs,0, rc,  0,-1,0]
-                             : [ rc,0, rs,  rs,0,-rc,  0, 1,0];
+      const M = RM;                        /* attOf already IS this matrix - checked, all 24 */
       const dFace = rq&1 ? p.w : d;                                   /* what hangs down, once turned */
       const cy = -(plateRows - b.row)*LDU_PLATE + dFace*LDU_STUD/2;   /* down from the row it hangs on */
       /* IT MOUNTS BY ITS UNDERSIDE, so that face sits ON the layer plane - it is not centred in a
@@ -5524,9 +5612,10 @@ function toLdr(){
                M.map(ldNum).join(" ")+" "+p.id+".dat");
       return;
     }
-    const x = bx - (gx*c + gz*s), z = bz - (-gx*s + gz*c);
+    /* the part's own centre carried through the SAME matrix that is written on the line below */
+    const x = bx - (RM[0]*gx + RM[2]*gz), z = bz - (RM[6]*gx + RM[8]*gz);
     out.push("1 "+COLORS[b.colorIdx].code+" "+ldNum(x)+" "+ldNum(y)+" "+ldNum(z)+" "+
-             c+" 0 "+s+" 0 1 0 "+(-s || 0)+" 0 "+c+" "+p.id+".dat");
+             RM.map(ldNum).join(" ")+" "+p.id+".dat");
   });
   out.push("0");
   return out.join("\n")+"\n";
@@ -6563,7 +6652,7 @@ cv.addEventListener("drop", e=>{
   const gi = COLORS.findIndex(x=>x.code===(fromKit ? lp.color : lp.colorCode));
   const ci = fromKit ? (gi>=0 ? gi : selCol)
                      : ((lp.id in libColor) ? libColor[lp.id] : (gi>=0 ? gi : selCol));
-  const nb = settle({p:p, colorIdx:ci, col:anchor(c,p,rotNext), row:c.row, flip:flip, turn:faceNext||undefined, rot:rotNext});
+  const nb = settle({p:p, colorIdx:ci, col:anchor(c,p,armed.rot), row:c.row, turn:armed.turn==="up"?undefined:armed.turn, rot:armed.rot});
   bricks.push(nb);
   selBrick=nb; say("");            /* as the Part tool does - the block above is the report */
   draw(); bom(); commit();
@@ -6867,8 +6956,14 @@ $("fOpen").onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new Fil
     bricks=(d.bricks||[]).map(b=>{
       const gp=(b.gpath||[]).map(id=>{ if(!(id in gmap)) gmap[id]=++groupSeq; return gmap[id]; });
       return {p:{id:b.id,name:b.name,w:b.w,d:b.d||1,h:b.h,shape:b.shape,studs:b.studs,side:b.side,top:b.top},
-        colorIdx:Math.max(0,COLORS.findIndex(c=>c.code===b.color)),col:b.col,row:b.row,flip:b.flip,
-        base:b.base, turn:b.turn, rot:b.rot, half:b.half,
+        colorIdx:Math.max(0,COLORS.findIndex(c=>c.code===b.color)),col:b.col,row:b.row,
+        /* A FILE WRITTEN BEFORE THE AXIS BUTTONS CARRIES `flip`, WHICH WAS HALF A TURN ABOUT THE
+           UPRIGHT AXIS - so it is read as rot + 2 and the part keeps the orientation it was saved
+           in. It was ignored on a tipped part, and it is ignored here too. Nothing on disk is
+           rewritten: this is how the old field is READ. */
+        base:b.base, turn:b.turn,
+        rot:(((b.rot|0) + (b.flip && b.turn!=="face" && b.turn!=="back" ? 2 : 0)) & 3),
+        half:b.half,
         group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
         /* names arrive as a list aligned with gpath; a file written before that carries one flat
            name, which belongs to the only level it had */
@@ -6926,7 +7021,7 @@ $("aClose").onclick=()=>$("about").classList.remove("show");
    already calls draw() and re-glues the 3D overlay. fit() was bound here as well, so every resize
    event re-based the guide geometry and rebuilt the frame before drawing twice. Nothing about the
    plate depends on the window, so there is nothing for fit() to recompute. */
-swatches(); syncSizeFields(); updateZoomUI(); applyFrameScale();
+swatches(); syncSizeFields(); updateZoomUI(); applyFrameScale(); syncAxes();
 /* The empty workspace is the first snapshot, so the first brick placed has something to go back to.
    applyFrameScale has already committed; this only guards a future boot path that does not. */
 if(!hist.length) commit();
