@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-10.205 -->
+<!-- SANGALA_VERSION: 2026-09-10.206 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -280,11 +280,11 @@
          tipping a queen over to signal game over in chess." Describing the result as landing on its
          back invites the reader to picture the part going over backwards, which is neither the
          motion nor how anyone tips anything. -->
-    <button class="ltbtn" id="tRotY" title="Rotate Y: turn the part a quarter turn about the upright axis, counterclockwise seen from above">&#8634;<small>Rotate Y</small></button>
+    <button class="ltbtn" id="tRotY" title="Rotate Y: turn the part a quarter turn about the axis running into the workspace, rolling it onto its side">&#8634;<small>Rotate Y</small></button>
     <!-- Rotate spins a TURNED part a quarter turn counterclockwise, so a wedge laid on the side of
          the figure can point where the wing needs it to. It does nothing to an upright part: a plan
          is the only view a quarter turn means anything in. -->
-    <button class="ltbtn" id="tRotZ" title="Rotate Z: turn the part a quarter turn about the axis running into the workspace, rolling it onto its side">&#8634;<small>Rotate Z</small></button>
+    <button class="ltbtn" id="tRotZ" title="Rotate Z: turn the part a quarter turn about the upright axis, counterclockwise seen from above">&#8634;<small>Rotate Z</small></button>
     <!-- The two Half Step buttons stood here. They are gone from the Toolbar at Glen's word
          (2026-08-18): "I want to get those half-step buttons off the tool bar. They belong in a
          spinner control that will move a brick toward the front or back in half-step increments."
@@ -4080,9 +4080,8 @@ const rotOf   = b => b ? ((b.rot|0) & 3) : 0;
    which is what flip WAS; nothing is rewritten on disk and no design moves - except the parts that
    were already drawn one way and placed another, which is the defect this removes.
    PARTYAW IS A PRE-TURN OF THE PART'S OWN, applied on the right so a slope's ramp lies across the
-   profile, and it is suppressed for a part tipped onto its face exactly as it was before today. That
-   is the one asymmetry left in here; it is carried forward deliberately, because changing it would
-   turn every faced slope in every saved design a quarter circle. */
+   profile. It applies in every attitude - see attOf, where suppressing it for a tipped part cost the
+   buttons the one property they exist for. */
 const TURNS  = ["up","face","back","down","left","right"];
 const A_TURN = {                       /* part axes -> figure axes: x right, y DOWN, z away from you */
   up:   [1,0,0,  0,1,0,   0,0,1],
@@ -4100,7 +4099,19 @@ const yawM = k => { const c=[1,0,-1,0][k&3], s=[0,1,0,-1][k&3]; return [c,0,s, 0
 const turnOf = b => { const t = b && b.turn; return TURNS.indexOf(t)>=0 ? t : "up"; };
 function attOf(b){
   const p=b.p, m=ldrMesh[p.id];
-  const pre = faced(b) ? 0 : (Math.round(partYaw(p, m && m.box)/90) & 3);
+  /* PARTYAW APPLIES IN EVERY ATTITUDE, AND IT MUST. It was suppressed for a tipped part, which is
+     what the three old buttons did, and carrying that forward broke the one thing the new ones are
+     for: a button that adds a quarter turn about a fixed axis EXCEPT where it also switches a
+     pre-turn on or off is not a rotation at all. Glen, 2026-09-10: "Rotate X appears to be not
+     rotating uniformly on a single axis" - and it was not, on a slope, because Rotate X is the
+     button that carries a part in and out of the tipped attitudes.
+     Checked: with the pre-turn always applied, each of the three buttons composes the SAME matrix at
+     every press, and that matrix is the axis the button is named for. Suppressed, Rotate X composed
+     four different ones.
+     THE COST IS REAL AND IT IS SMALL. A slope tipped with the old Flip Vertical and saved comes back
+     turned a quarter circle from where it was left; one press of Rotate Z puts it back. Nothing else
+     moves, and no saved file is rewritten. */
+  const pre = Math.round(partYaw(p, m && m.box)/90) & 3;
   return mul3(mul3(A_TURN[turnOf(b)], yawM(rotOf(b))), yawM(pre));
 }
 /* WHICH WAY THE PART'S THIN END POINTS, which is all `flip` ever meant to the drawing and to the
@@ -4114,10 +4125,16 @@ const flipOf = b => { const R = attOf(b); return R[2] < 0 || (R[2] === 0 && R[0]
 const ORIENT = (function(){ const m=Object.create(null);
   TURNS.forEach(t=>{ for(let r=0;r<4;r++) m[mul3(A_TURN[t], yawM(r)).join(",")] = {turn:t, rot:r}; });
   return m; })();
-const R_AXIS = {x:[1,0,0, 0,0,-1, 0,1,0], y:[0,0,1, 0,1,0, -1,0,0], z:[0,-1,0, 1,0,0, 0,0,1]};
-/* A quarter turn about one of the FIGURE'S axes, composed on the LEFT so the part's own partYaw
-   pre-turn on the right is untouched. x tips it forward, which is what Flip Vertical did; y is the
-   yaw Rotate did; z rolls it onto its side, which nothing offered before. */
+/* THE AXES ARE NAMED THE WAY THE STUDENT'S OTHER TOOL NAMES THEM: x runs across the workspace, y
+   runs into it, z stands up it - TinkerCAD's convention, which is what Glen asked these to work like
+   (2026-09-10). LDraw's own axes are not those - its y is the upright one and it points DOWN - so the
+   matrices below are written in the figure's frame and the names are put on afterwards. Naming them
+   LDraw's way had Rotate Z spinning the part about the vertical, which reads as Y to anyone who has
+   used TinkerCAD, and Glen saw exactly that.
+   Composed on the LEFT, so the part's own partYaw pre-turn on the right is untouched. */
+const R_AXIS = {x:[1,0,0, 0,0,-1, 0,1,0],      /* across the workspace: tips the part toward you */
+                y:[0,-1,0, 1,0,0, 0,0,1],      /* into the workspace: rolls it onto its side */
+                z:[0,0,1, 0,1,0, -1,0,0]};     /* up the workspace: the turntable spin */
 function spun(b, axis){
   const now = mul3(A_TURN[turnOf(b)], yawM(rotOf(b)));
   return ORIENT[mul3(R_AXIS[axis], now).join(",")];
