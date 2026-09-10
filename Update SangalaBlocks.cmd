@@ -27,7 +27,7 @@ REM ==========================================================================
 setlocal
 cd /d "%~dp0"
 
-set "BASE=https://raw.githubusercontent.com/GlenBull/SangalaBlockDesigner/main"
+set "BASE=https://raw.githubusercontent.com/watts-j/SangalaBlockDesigner/main"
 set "HTML=SangalaBlockDesigner.html"
 set "EXE=SangalaBlockDesigner.exe"
 set "TMPHTML=SangalaBlockDesigner.html.new"

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-08-30.203 -->
+<!-- SANGALA_VERSION: 2026-09-10.204 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1158,7 +1158,28 @@ function drawGuide(){
    how the crest sits three pieces on a 1 x 3 plate and still reaches wider than the plate. The
    overhang is at the THIN end, so `flip` says which side it falls on. Every place that draws or
    places a part asks these, so the workspace, the 3D view and the exported model cannot disagree. */
-const overCols  = p => p.shape==="invslope" ? 1 : 0;         /* studs of body beyond the footprint */
+/* AN INVERTED SLOPE RESTS ON ONE STUD ALONG ITS RAMP, and that is read here rather than taken from
+   the part's stored width, because the two sources of a part disagree about what that width MEANS.
+   The built-in table states the footprint outright - 3660 is w:1, d:2 - while a part added by design
+   number takes its figures from the part's own name, where the "2 x 2" is the BODY. So the same
+   3660 arrived by the two routes with widths of 1 and 2, and the wider one was then given a further
+   column of overhang on top of it: a 2-stud part centered in a 3-column band, which is half a stud
+   off the grid in the plan, the 3D view and the snapshot alike (Glen, 2026-09-10, the red 3660b
+   sitting half a stud clear of the brick beside it).
+   READ, NOT MIGRATED. A design already saved carries the wider figure and is left exactly as it is -
+   the fix is in what the application makes of it, so the file opens where the builder put it. */
+const footCols  = p => p.shape==="invslope" ? 1 : p.w;       /* studs of FOOTPRINT across the screen */
+/* HOW FAR THE BODY REACHES ALONG THE RAMP, measured on the part itself - the mesh the 3D view has
+   already fetched - and read off its name until that arrives. Never a constant: a 33-degree inverted
+   slope reaches three studs where a 45 reaches two, and the ramp is the part's own z, which is why
+   `partYaw` turns every inverted slope a quarter to lay it across the profile. */
+const rampCols  = p => {
+  const m = ldrMesh[p.id];
+  if(m && m.box) return Math.max(1, Math.round((m.box[5]-m.box[2])*LDU/STUD));
+  const pairs = (p.name||"").match(/\d+\s*x\s*\d+/g);
+  return pairs ? Math.max(1, parseInt(pairs[pairs.length-1],10)||2) : 2;
+};
+const overCols  = p => p.shape==="invslope" ? Math.max(0, rampCols(p)-footCols(p)) : 0;
 const overLeft  = (p,fl) => fl ? 0 : overCols(p);            /* unflipped: the thin end is the left */
 const overRight = (p,fl) => fl ? overCols(p) : 0;
 
@@ -1178,7 +1199,7 @@ function shape(p,col,row,fl,face,rot,away){
   /* Turned onto a face, the part presents its PLAN: the dimension across the screen is still its
      width, but the one up the screen is its DEPTH in studs, not its height in plates - and a
      quarter turn swaps those two over. */
-  const w=mx(((r&1 ? (p.d||1) : p.w)+oL+oR)*STUD);
+  const w=mx(((r&1 ? (p.d||1) : footCols(p))+oL+oR)*STUD);
   const h=face ? mx((r&1 ? p.w : (p.d||1))*STUD) : mx(rowsOf(p)*vUnit());
   ctx.beginPath();
   /* THE PART'S OWN OUTLINE FIRST, wherever the library can supply one - see silOf. Only a part whose
@@ -3449,8 +3470,8 @@ function bricksToTris(){
         boxTris(x0,x1,y0,y1,z0,z1,mine);
       }
       if(!real && studded(p)){
-        for(let cx=0;cx<p.w;cx++){
-          if(p.shape==="slope" && (b.flip ? cx===p.w-1 : cx===0)) continue;
+        for(let cx=0, ac=footCols(p); cx<ac; cx++){
+          if(p.shape==="slope" && (b.flip ? cx===ac-1 : cx===0)) continue;
           for(let dy=0; dy<d; dy++)
             cylZ(x0+STUD*(cx+0.5), y1-STUD*(dy+0.5), z1, z1+1.8, 2.4, mine);
         }
@@ -3510,7 +3531,7 @@ function bricksToTris(){
     if(!real && studded(p)){
       for(let ry=0;ry<d;ry++){
         if(p.shape==="slope" && (b.flip ? ry===0 : ry===d-1)) continue;
-        for(let cx=0;cx<p.w;cx++)
+        for(let cx=0;cx<footCols(p);cx++)
           cyl(x0+STUD*(cx+0.5), z1-STUD*(ry+0.5), y0, y0-1.8, 2.4, mine);
       }
     }
@@ -4072,7 +4093,7 @@ function nearFace(b){
   return viewBack ? -rearB(b) : frontB(b);   /* walk round and the far surface becomes the near one */
 }
 const quarter = b => (rotOf(b) & 1) === 1;                /* an odd turn swaps the plan's two sides */
-const acrossOf= b => quarter(b) ? (b.p.d||1) : b.p.w;     /* studs across the screen */
+const acrossOf= b => quarter(b) ? (b.p.d||1) : footCols(b.p);  /* studs of footprint across the screen */
 const deepOf2 = b => quarter(b) ? b.p.w : (b.p.d||1);     /* studs down it, before the row grid */
 const rowsFor = b => faced(b) ? Math.max(1, Math.ceil(deepOf2(b)*STUD/vUnit())) : rowsOf(b.p);
 const foot    = b => ({x0:b.col, x1:b.col+acrossOf(b), y0:b.row, y1:b.row+rowsFor(b)});
@@ -5395,7 +5416,7 @@ function toLdr(){
              ""];
   bricks.forEach(b=>{
     if(parked(b)) return;                 /* a candidate on the cork is not part of the design */
-    const p=b.p, w=p.w, d=p.d||1, h=p.h||1;
+    const p=b.p, w=footCols(p), d=p.d||1, h=p.h||1;
     /* placed by the middle of its BODY, not of its footprint - see `overCols` */
     const oL=overLeft(p,b.flip), oR=overRight(p,b.flip);
     const bx=((b.col - oL) + (w + oL + oR)/2)*LDU_STUD;   /* where the cell's centre is */
