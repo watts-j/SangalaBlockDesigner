@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.213 -->
+<!-- SANGALA_VERSION: 2026-09-11.214 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -4364,6 +4364,7 @@ function originX(b){
    whole cell away (Glen, 2026-09-11). Depth has had exactly this since the half step; this is the
    same idea on the other two axes, and at the finest measure the library can express - a jumper
    plate's stud sits 10 units from its end, which no coarser step reaches. */
+const UNITS = () => [Math.round(STUD/LDU), Math.round(vUnit()/LDU)];  /* units to a column, to a row */
 const fineX = b => (b && +b.dx || 0) * LDU;      /* mm */
 const fineY = b => (b && +b.dy || 0) * LDU;
 function originY(b){
@@ -4548,6 +4549,14 @@ function settle(nb){             /* put the part where the mode says it comes to
    And "nearest" depends on which side you are standing on: from the far side the brick nearest you is
    the one with the LOWEST depth, so the comparison turns round with the view, exactly as the drawing
    order does. It also reads depthOf rather than base, so a half step counts.  */
+/* WHAT A DRAG HAS TO REMEMBER. The coarse drag needs the cell the brick was grabbed by; the fine one
+   needs where the pointer started and where the lead brick stood, both in units, so a fraction of a
+   millimetre of hand movement is not rounded away twice. */
+function dragFrom(members, b, c){
+  const pu=UNITS();
+  return {members:members, lead:b, dcol:c.col-b.col, drow:c.row-b.row, moved:false,
+          px:c.mmx, py:c.mmy, ux:b.col*pu[0]+(+b.dx||0), uy:b.row*pu[1]+(+b.dy||0)};
+}
 function hit(c){
   let best=-1, top=-Infinity;
   const near = viewBack ? -1 : 1;
@@ -4889,7 +4898,7 @@ cv.addEventListener("mousedown",(e)=>{
      does not work for bricks."). Checked BEFORE the group branch, so a set larger than one
      group is not silently collapsed to the group that happened to be pressed. */
   if(selMulti.length && selMulti.indexOf(b)>=0){
-    moveDrag={members:selMulti.slice(), lead:b, dcol:c.col-b.col, drow:c.row-b.row, moved:false};
+    moveDrag=dragFrom(selMulti.slice(), b, c);
     cv.style.cursor="grabbing"; e.preventDefault(); return;
   }
   /* A CLICK ON ANY MEMBER TAKES THE WHOLE GROUP, and the drag that follows carries all of it. */
@@ -4897,7 +4906,7 @@ cv.addEventListener("mousedown",(e)=>{
     const g=wholeGroup(b);
     if(!(selMulti.length===g.length && g.every(x=>selMulti.indexOf(x)>=0))){ selMulti=g; selBrick=null; }
     draw();
-    moveDrag={members:g, lead:b, dcol:c.col-b.col, drow:c.row-b.row, moved:false};
+    moveDrag=dragFrom(g, b, c);
     cv.style.cursor="grabbing"; e.preventDefault(); return;
   }
   /* DRAW IT AT ONCE. Setting the selection without repainting left the outline invisible until some
@@ -4918,7 +4927,7 @@ cv.addEventListener("mousedown",(e)=>{
   /* MEMBERS, NEVER AN INDEX. The drop lifts them out of the array and pushes them back, so an index
      stored here would point at a different brick by the second drag. `from` went with it: nothing
      ever read it. */
-  moveDrag={members:[b], lead:b, dcol:c.col-b.col, drow:c.row-b.row, moved:false};
+  moveDrag=dragFrom([b], b, c);
   cv.style.cursor="grabbing";
   e.preventDefault();
 });
@@ -4992,6 +5001,25 @@ window.addEventListener("mousemove",(e)=>{
   /* ONE DELTA FOR THE WHOLE SET, measured against the brick actually under the hand. Moving each
      member to the pointer would collapse the group onto one cell. */
   const c=cell(e), L=moveDrag.lead;
+  /* HOLD SHIFT WHILE DRAGGING AND THE BRICK MOVES A UNIT AT A TIME - 0.4 mm, the fine step - rather
+     than by whole studs and plates (Glen, 2026-09-11). Let go of it and the drag is coarse again.
+     THE KEY IS READ AS THE HAND MOVES, NOT AT THE PRESS, and that is not a detail: Shift on a press
+     already means Studio's add-to-set, which deliberately does NOT start a move, and it must go on
+     meaning that. Read here, the two never meet. */
+  if(e.shiftKey){
+    const pu=UNITS();
+    const wx=moveDrag.ux + Math.round((c.mmx-moveDrag.px)/LDU);
+    const wy=moveDrag.uy + Math.round((c.mmy-moveDrag.py)/LDU);
+    const du=wx-(L.col*pu[0]+(+L.dx||0)), dv=wy-(L.row*pu[1]+(+L.dy||0));
+    if(!du && !dv) return;
+    moveDrag.members.forEach(x=>{
+      const X=x.col*pu[0]+(+x.dx||0)+du, Y=x.row*pu[1]+(+x.dy||0)+dv;
+      x.col=Math.floor(X/pu[0]); x.dx=(X-x.col*pu[0])||undefined;
+      x.row=Math.floor(Y/pu[1]); x.dy=(Y-x.row*pu[1])||undefined;
+    });
+    moveDrag.moved=true; draw();
+    return;
+  }
   const col=c.col-moveDrag.dcol, row=c.row-moveDrag.drow;
   if(col===L.col && row===L.row) return;
   const dc=col-L.col, dr=row-L.row;
