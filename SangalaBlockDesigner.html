@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.209 -->
+<!-- SANGALA_VERSION: 2026-09-11.210 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1507,8 +1507,15 @@ function drawBrick(b,ghost){
        its face, and it is drawn where it is.
        THE COLUMN RULE IS KEPT AS THE FALLBACK, for a part whose geometry has not arrived - the same
        second or so in which the outline is a stand-in too. */
+    /* NO UPWARD STUD IS AN ANSWER, NOT A MISSING ONE. This asked whether the measured list was
+       EMPTY and fell back to the column rule when it was - so a part with its studs pointing
+       sideways, which is the whole case this was written for, got the column studs straight back.
+       Glen, 2026-09-11, on 15573 rolled onto its side: "the stud still appears on top." What decides
+       the fallback is whether the part's geometry has ARRIVED, not what it says. */
+    const mStud = ldrMesh[p.id];
+    const measured = !!(mStud && mStud.studs);
     const ups = upStuds(b), ox = originX(b);
-    const spots = ups.length
+    const spots = measured
       ? ups.map(u=>({x:mx(ox + u.x*LDU), y:y + mx(u.y*LDU)}))
       : (function(){ const out=[];
           for(let cx=0;cx<bcols;cx++){
