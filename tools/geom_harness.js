@@ -30,7 +30,7 @@ function load(){
                 "bodySpanX","meshMidX","alignDX","upStuds","planStuds","overLeft","overRight","footCols",
                 "foot","ldrFlatten","ldrMesh","LDU","STUD","PLATE","LDU_PER_STUD","partYaw","faced",
                 "turnOf","rotOf","fineX","fineY","ORIENT","spun","A_TURN","mul3","yawM",
-                "ELEMENT_ID","footX","bodyExt","footExt","upStudX"];
+                "ELEMENT_ID","footX","bodyExt","footExt","upStudX","rearB","frontB","parked","boxFor"];
   /* The probe is evaluated in the script's own scope, so it can set the design the three renderers
      read and then call them. That is what makes this a check of the shipping code rather than of a
      copy of it. */

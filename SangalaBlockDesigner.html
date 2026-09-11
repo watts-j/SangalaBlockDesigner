@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.226 -->
+<!-- SANGALA_VERSION: 2026-09-11.227 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1550,10 +1550,26 @@ function drawBrick(b,ghost){
       ctx.fillStyle=studFace; ctx.fill();
       ctx.strokeStyle=studEdge; ctx.lineWidth=1; ctx.stroke();
     };
-    const st = planStuds(b), ox = originX(b), rr = Math.max(1.4, mx(2.4));
+    const st = planStuds(b), ox = originX(b), oyy = originY(b), rr = Math.max(1.4, mx(2.4));
+    const rB = rearB(b), fB = frontB(b);
+    const buried = t => {
+      const tx = ox + (t.x + 4*t.dx)*LDU, ty = oyy + (t.y + 4*t.dy)*LDU;
+      const lo = t.dz < -0.9 ? fB : t.dz > 0.9 ? rB : rB;      /* the depth the stud itself is at */
+      const hi = t.dz < -0.9 ? fB : t.dz > 0.9 ? rB : fB;
+      for(let i=0;i<bricks.length;i++){
+        const x = bricks[i];
+        if(x === b || parked(x)) continue;
+        const q = boxFor(x);
+        if(tx <= q.x0 + 1e-6 || tx >= q.x1 - 1e-6) continue;
+        if(ty <= q.y0 + 1e-6 || ty >= q.y1 - 1e-6) continue;
+        if(q.r < hi - 1e-6 && lo + 1e-6 < q.f) return true;
+      }
+      return false;
+    };
     if(st){
       st.forEach(t=>{
-        const px2 = mx(ox + t.x*LDU), py2 = mx(originY(b) + t.y*LDU);
+        if(buried(t)) return;
+        const px2 = mx(ox + t.x*LDU), py2 = mx(oyy + t.y*LDU);
         if(Math.abs(t.dz) > 0.9){
           /* end-on: which face you see depends on which side you are standing */
           const mine = viewBack ? t.dz > 0 : t.dz < 0;
@@ -1649,7 +1665,29 @@ function drawBrick(b,ghost){
   ctx.globalAlpha=1;
 }
 
+/* A STUD THAT IS INSIDE ANOTHER PART IS NOT DRAWN. Glen, 2026-09-11, with a plate's stud showing
+   where it had been pushed into the 1 x 1 beside it: "it should be nested inside". The plan hides
+   one part behind another only by painting order, and paint order follows the NEAREST surface - so
+   a part that straddles its neighbour in depth is painted last and its studs land on top of it.
+   THE TEST IS IN THREE DIMENSIONS, not on the screen. The plan is a profile: two parts can cover the
+   same spot and be many layers apart through the figure, and hiding a stud that stands in front of a
+   distant part would lose something real. So a stud goes only when its TIP is inside another part -
+   across, down, and through.
+   WHICH DEPTH THE STUD IS AT follows where it points. One facing the viewer is on the part's front
+   surface, one facing away is on its back, and one pointing up or sideways runs through the part's
+   whole thickness. That is what keeps a stud facing you from being buried by whatever is behind it.
+   The boxes are worked out once per repaint. Asking each part for its span inside the loop made the
+   drawing quadratic in matrix arithmetic on a design of any size. */
+const drawBox = new Map();
+function boxFor(x){
+  let v = drawBox.get(x);
+  if(!v){ const sp=bodySpanX(x), ft=foot(x);
+          v = {x0:sp.left, x1:sp.left+sp.width, y0:ft.y0, y1:ft.y1, r:rearB(x), f:frontB(x)};
+          drawBox.set(x, v); }
+  return v;
+}
 function draw(){
+  drawBox.clear();
   sizeCanvas(); worldParams();
   ctx.clearRect(0,0,cv.width,cv.height);
   ctx.fillStyle=corkPattern(); ctx.fillRect(0,0,cv.width,cv.height);   /* corkboard everywhere, as Studio paints it */
