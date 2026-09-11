@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.221 -->
+<!-- SANGALA_VERSION: 2026-09-11.222 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1304,8 +1304,7 @@ function shape(b,col,row){
     } else if(p.shape==="cone"){
       const t=w*CONE_TIP;                              /* the same half the 3D view tapers to */
       ctx.moveTo(x,y+h); ctx.lineTo(x+(w-t)/2,y); ctx.lineTo(x+(w+t)/2,y); ctx.lineTo(x+w,y+h);
-    } else if(ctx.roundRect){ ctx.roundRect(x,y,w,h,Math.min(mx(1.4), Math.min(w,h)/5)); }
-    else ctx.rect(x,y,w,h);
+    } else ctx.rect(x,y,w,h);
     ctx.closePath(); return {x,y,w,h};
   }
   if(p.shape==="round" || p.shape==="cone"){
@@ -1328,8 +1327,12 @@ function shape(b,col,row){
     pts = spin(pts, pw, pd, r);
     const s=mx(STUD);
     pts.forEach((q,i)=>{ const X=x+q[0]*s, Y=y+q[1]*s; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
-  } else if(ctx.roundRect){ ctx.roundRect(x,y,w,h,Math.min(mx(1.4), Math.min(w,h)/5)); }
-  else ctx.rect(x,y,w,h);
+  /* SQUARE CORNERS, because the brick has square corners. The stand-in rectangle was drawn with a
+     1.4 mm fillet, and the measured outline beside it - which any part with a stud on a face or a
+     groove falls to - has none, so the same brick was drawn two ways and the corners said which
+     path it had taken (Glen, 2026-09-11: "I do not want bricks to appear with rounded corners that
+     their physical counterparts do not have"). One shape now, whichever path draws it. */
+  } else ctx.rect(x,y,w,h);
   ctx.closePath(); return {x,y,w,h};
 }
 /* THE TONES A BRICK IS DRAWN IN, in one place, because the flat view and the 3D View must not
