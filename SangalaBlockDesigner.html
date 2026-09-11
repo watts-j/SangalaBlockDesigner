@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.212 -->
+<!-- SANGALA_VERSION: 2026-09-11.213 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -4026,7 +4026,7 @@ function cell(e){
      design, so the anchor moves by the part's own width. Without that a wide brick landed with its
      far end under the pointer and its body somewhere else entirely. */
   if(viewBack) x = backAxis - x;
-  return {col:Math.floor(x/STUD), row:Math.floor(y/vUnit()), mirrored:viewBack};
+  return {col:Math.floor(x/STUD), row:Math.floor(y/vUnit()), mmx:x, mmy:y, mirrored:viewBack};
 }
 
 /* ---------- LAYERS ----------
@@ -4335,7 +4335,7 @@ function alignDX(b){
 function originX(b){
   const oL = overLeft(b), oR = overRight(b);
   const mid = ((b.col - oL) + (acrossOf(b) + oL + oR)/2) * LDU_PER_STUD;
-  return (mid - meshMidX(b))*LDU + alignDX(b);
+  return (mid - meshMidX(b))*LDU + alignDX(b) + fineX(b);
 }
 /* THE BODY IS DRAWN AT ITS TRUE WIDTH, NOT AT THE WIDTH OF THE CELLS IT CLAIMS. A cell is a whole
    cell, so a part that is not a whole number of them across rounds UP to claim them - and drawing
@@ -4356,6 +4356,16 @@ function originX(b){
    So the line is the top of the part's BODY, whichever face that has become. The body is the part
    without its studs - the box its declared size gives, hung from the origin the way LDraw hangs it -
    and for a part standing square its top IS the origin, so nothing about those parts moves. */
+/* THE FINE STEP, IN LDRAW UNITS. A stud is 20 of them and a plate is 8, so the two grids the figure
+   is built on - studs across, plates down - have no common step of their own: a brick on its side is
+   1.2 studs across and 2.5 plates tall, and the columns and rows could only round that up. `col` and
+   `row` still count whole studs and plates, which is what a builder points at; `dx` and `dy` carry
+   whatever is left over, in units of 0.4 mm, so a part can sit against its neighbour rather than a
+   whole cell away (Glen, 2026-09-11). Depth has had exactly this since the half step; this is the
+   same idea on the other two axes, and at the finest measure the library can express - a jumper
+   plate's stud sits 10 units from its end, which no coarser step reaches. */
+const fineX = b => (b && +b.dx || 0) * LDU;      /* mm */
+const fineY = b => (b && +b.dy || 0) * LDU;
 function originY(b){
   const R = attOf(b), p = b.p;
   const W = footCols(p)*LDU_PER_STUD, H = (p.h||1)*(PLATE/LDU), D = (p.d||1)*LDU_PER_STUD;
@@ -4365,11 +4375,11 @@ function originY(b){
     const v = R[3]*q[0] + R[4]*q[1] + R[5]*q[2];
     if(v < lo) lo = v;
   }
-  return b.row*vUnit() - lo*LDU;
+  return b.row*vUnit() + fineY(b) - lo*LDU;
 }
 function bodySpanX(b){
   const oL = overLeft(b), oR = overRight(b);
-  const band = {left:(b.col-oL)*STUD + alignDX(b), width:(acrossOf(b)+oL+oR)*STUD};
+  const band = {left:(b.col-oL)*STUD + alignDX(b) + fineX(b), width:(acrossOf(b)+oL+oR)*STUD};
   const m = ldrMesh[b.p.id];
   if(!m || !m.box) return band;
   const R = attOf(b), B = m.box;
@@ -4428,7 +4438,12 @@ const acrossOf= b => Math.max(1, Math.ceil(spanOf(b)[0]/STUD - 1e-6));   /* cell
 const downOf  = b => spanOf(b)[1];                        /* mm down the screen */
 const deepOf2 = b => spanOf(b)[2]/STUD;                   /* studs into the figure */
 const rowsFor = b => Math.max(1, Math.ceil(downOf(b)/vUnit() - 1e-6));
-const foot    = b => ({x0:b.col, x1:b.col+acrossOf(b), y0:b.row, y1:b.row+rowsFor(b)});
+/* WHAT THE PART ACTUALLY COVERS, IN MILLIMETRES - not the cells it rounds up to. Two parts overlap
+   when their bodies overlap; a part is on the plate when its body is. Counting in whole cells is
+   what made a 1 x 2 plate on its side keep a whole column to itself and stand its neighbour a stud
+   away, and it is the last of the rounding faults (Glen, 2026-09-11). */
+const foot    = b => { const sp=bodySpanX(b), top=b.row*vUnit()+fineY(b);
+                       return {x0:sp.left, x1:sp.left+sp.width, y0:top, y1:top+downOf(b)}; };
 /* PARKED: a brick put down on the cork OUTSIDE the plate. Glen, 2026-08-14: "It would be helpful to
    be able to place bricks on the corkboard outside the workspace... I could quickly try two or
    three bricks for fit." Studio settled what that means and this follows it - its canvas is "a
@@ -4440,8 +4455,8 @@ const foot    = b => ({x0:b.col, x1:b.col+acrossOf(b), y0:b.row, y1:b.row+rowsFo
    and a change of page size, and so dragging one in will settle it with no bookkeeping. A brick
    overlapping the plate at all counts as ON it - a half-parked brick would be neither. */
 function parked(b){
-  const f=foot(b), cols=Math.round(modelW/STUD), rows=Math.round(modelH/vUnit());
-  return f.x1<=0 || f.x0>=cols || f.y1<=0 || f.y0>=rows;
+  const f=foot(b);
+  return f.x1<=0 || f.x0>=modelW || f.y1<=0 || f.y0>=modelH;
 }
 function overlaps(a,b){ const A=foot(a), B=foot(b);
   return A.x0<B.x1 && B.x0<A.x1 && A.y0<B.y1 && B.y0<A.y1; }
@@ -4451,9 +4466,13 @@ function restingBase(nb){        /* the layer it would take: just clear of whate
   /* THE FRAME COUNTS ONLY IN RELIEF, where it is a surface parts stand ON and frameTop says how high
      it stands. In a standing figure the frame is a BACKDROP - the silhouette behind the design - so
      the first course sits against it at zero, and nothing about the frame pushes a brick forward. */
-  if(mode!=="standing")
-    for(let r=f.y0;r<f.y1;r++) for(let c=f.x0;c<f.x1;c++)
+  /* the frame is stored per CELL, so the part's real span is asked in the cells it touches */
+  if(mode!=="standing"){
+    const c0=Math.floor(f.x0/STUD), c1=Math.ceil(f.x1/STUD - 1e-6);
+    const r0=Math.floor(f.y0/vUnit()), r1=Math.ceil(f.y1/vUnit() - 1e-6);
+    for(let r=r0;r<r1;r++) for(let c=c0;c<c1;c++)
       base=Math.max(base, frameTop.get(cellKey(c,r))||0);
+  }
   /* TOWARDS THE VIEWER, WHICHEVER SIDE THAT IS. From the front a part comes to rest just clear of
      what is already there, at a higher layer; from the far side "clear of it" is a LOWER layer, so
      the layers run negative - which is exactly the signed depth Glen described when he named the
@@ -4532,8 +4551,11 @@ function settle(nb){             /* put the part where the mode says it comes to
 function hit(c){
   let best=-1, top=-Infinity;
   const near = viewBack ? -1 : 1;
+  /* the pointer's own place on the plate, in millimetres - the part's body is measured the same way */
+  const px = (c.mmx===undefined ? c.col*STUD + STUD/2 : c.mmx);
+  const py = (c.mmy===undefined ? c.row*vUnit() + vUnit()/2 : c.mmy);
   bricks.forEach((b,i)=>{ const f=foot(b), d=near*depthOf(b);
-    if(c.col>=f.x0 && c.col<f.x1 && c.row>=f.y0 && c.row<f.y1 && d>=top){ best=i; top=d; } });
+    if(px>=f.x0 && px<f.x1 && py>=f.y0 && py<f.y1 && d>=top){ best=i; top=d; } });
   return best;
 }
 const plates = n => n+(n===1?" plate":" plates");
@@ -5120,7 +5142,7 @@ function serializeState(){
     guide: guideRaw.map(g=>({...g, poly:(g.poly||[]).map(q=>[q[0],q[1]]),
                                    holes:(g.holes||[]).map(h=>h.map(q=>[q[0],q[1]]))})),
     bricks: bricks.map(b=>({ p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-                             base:b.base, turn:b.turn, rot:b.rot, half:b.half,
+                             base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy,
                              group:b.group, gpath:b.gpath?b.gpath.slice():undefined,
                              gnames:b.gnames?b.gnames.slice():undefined })) };
 }
@@ -5148,7 +5170,7 @@ function restoreState(st){
   groupSeq = st.groupSeq || 0;
   groupOrder = (st.groupOrder||[]).slice();
   bricks=(st.bricks||[]).map(b=>({ p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-                                   base:b.base, turn:b.turn, rot:b.rot, half:b.half,
+                                   base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy,
                                    group:b.group, gpath:b.gpath?b.gpath.slice():undefined,
                                    gnames:b.gnames?b.gnames.slice():undefined }));
   selBrick=null; selMulti=[];              /* the old objects are gone; nothing may point at them */
@@ -5179,6 +5201,32 @@ function redo(){
    Ctrl-Z puts the brick back - and the status line says so at the moment it happens, rather than
    leaving the builder to hope. A focused field keeps its own Delete: typing a size or a project name
    must not take a brick off the design. */
+/* THE ARROW KEYS NUDGE THE SELECTION BY ONE UNIT - 0.4 mm, the finest measure the library uses, and
+   the step that lets a part sit against its neighbour instead of a whole cell away. Twenty of them
+   make a stud and eight make a plate, and the carry is taken into `col` and `row` as they fill, so
+   the layer and column a brick reports stay the numbers a builder counts in.
+   THE ARROWS FOLLOW THE SCREEN, not the design: round the back the workspace is mirrored, so the
+   key that moves a brick to the right on the glass moves it leftwards in the design. */
+window.addEventListener("keydown",(e)=>{
+  const k=e.key;
+  if(k!=="ArrowLeft" && k!=="ArrowRight" && k!=="ArrowUp" && k!=="ArrowDown") return;
+  const tg0=(e.target&&e.target.tagName||"").toLowerCase();
+  if(tg0==="input"||tg0==="textarea"||tg0==="select"||(e.target&&e.target.isContentEditable)) return;
+  if(view3D) return;
+  const list = selMulti.length ? selMulti : (selBrick ? [selBrick] : []);
+  if(!list.length) return;
+  const sx = (k==="ArrowLeft" ? -1 : k==="ArrowRight" ? 1 : 0) * (viewBack ? -1 : 1);
+  const sy =  k==="ArrowUp"   ? -1 : k==="ArrowDown"  ? 1 : 0;
+  const perStud = Math.round(STUD/LDU), perRow = Math.round(vUnit()/LDU);
+  list.forEach(b=>{
+    let dx=(+b.dx||0)+sx, dy=(+b.dy||0)+sy;
+    const cx=Math.floor(dx/perStud), cy=Math.floor(dy/perRow);
+    if(cx){ b.col+=cx; dx-=cx*perStud; }
+    if(cy){ b.row+=cy; dy-=cy*perRow; }
+    b.dx = dx || undefined; b.dy = dy || undefined;
+  });
+  e.preventDefault(); draw(); commit();
+});
 window.addEventListener("keydown",(e)=>{
   if(e.key!=="Delete" && e.key!=="Backspace") return;
   const tg=(e.target&&e.target.tagName||"").toLowerCase();
@@ -5221,7 +5269,7 @@ function copyBrick(){
   if(!set.length){ say("Select a brick first, then Ctrl+C."); return; }
   clipSet=set.map(b=>({from:b,
     snap:{p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-          base:b.base, turn:b.turn, rot:b.rot, half:b.half,
+          base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy,
           gpath:gpathOf(b).slice(), gnames:gnamesOf(b).slice()}}));
   /* THE CLIPBOARD REMEMBERS THE BRICKS, NOT JUST THEIR READINGS - and the paste follows them. The
      snapshot alone is wrong for the way this application is actually used: Glen moves a part OFF
@@ -5351,7 +5399,7 @@ function pasteBrick(){
     const gp=gpathOf(src).map(id=>{ if(!(id in gmap)) gmap[id]=++groupSeq; return gmap[id]; });
     const gn=gnamesOf(src).slice();
     return {p:{...src.p}, colorIdx:src.colorIdx, col:src.col+step, row:src.row,
-            base:src.base, turn:src.turn, rot:src.rot, half:src.half,
+            base:src.base, turn:src.turn, rot:src.rot, half:src.half, dx:src.dx, dy:src.dy,
             group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
             gnames:gn.some(x=>x)?gn:undefined};
   });
@@ -5545,6 +5593,11 @@ function designJSON(){ return (
                            /* written only when it sits on a midline, which few parts do, and
                               signed since 2026-08-18 - forward or back */
                            ...(halfOf(b)?{half:halfOf(b)}:{}),
+                           /* the fine step across and down, in LDraw units, written only when the
+                              part has been nudged off the stud-and-plate grid - so a design built
+                              entirely on that grid is saved exactly as it always was */
+                           ...(+b.dx?{dx:+b.dx}:{}),
+                           ...(+b.dy?{dy:+b.dy}:{}),
                            /* written only when it is FALSE, since all but a tile carry studs */
                            ...(b.p.studs===false?{studs:false}:{}),
                            /* and only when the part has studs on a face, or fewer on top than
@@ -7206,7 +7259,7 @@ $("fOpen").onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new Fil
            rewritten: this is how the old field is READ. */
         base:b.base, turn:b.turn,
         rot:(((b.rot|0) + (b.flip && b.turn!=="face" && b.turn!=="back" ? 2 : 0)) & 3),
-        half:b.half,
+        half:b.half, dx:b.dx, dy:b.dy,
         group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
         /* names arrive as a list aligned with gpath; a file written before that carries one flat
            name, which belongs to the only level it had */
