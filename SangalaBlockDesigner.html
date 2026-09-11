@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.225 -->
+<!-- SANGALA_VERSION: 2026-09-11.226 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -403,8 +403,8 @@
                      font-size:.64rem;letter-spacing:.02em;color:#907c5c">
           Depth
           <span class="spin">
-            <button id="spUp" title="Move the selection half a layer towards you">&#9650;</button>
-            <button id="spDn" title="Move the selection half a layer away from you">&#9660;</button>
+            <button id="spUp" title="Move the selection half a layer towards you &mdash; hold Ctrl (Cmd on a Mac) for one unit, 0.4 mm">&#9650;</button>
+            <button id="spDn" title="Move the selection half a layer away from you &mdash; hold Ctrl (Cmd on a Mac) for one unit, 0.4 mm">&#9660;</button>
           </span>
         </span>
         <!-- MINI 3D VIEWER, HARD RIGHT, pushed there by the auto margin rather than by a spacer, so
@@ -3789,8 +3789,24 @@ function syncHalf(){ const b=selNow();
   /* No margin to hand over: the auto margin sits on the pair, which stays whether or not the
      spinner inside it does, so the button cannot fall back to the left of the row. */
 }
-function jogHalf(dir){
+function jogHalf(dir, fine){
   if(mode!=="standing"){ say("Half Step belongs to a standing figure, where layers are studs deep."); return; }
+  /* HOLD THE SAME KEY THAT MAKES A DRAG FINE AND THIS STEPS BY ONE UNIT - 0.4 mm - instead of by
+     half a layer. One key, one meaning, across the drag and the spinner; nothing new to learn.
+     The carry goes into the layer as the units fill, so `base` stays the whole number the Selected
+     line reports and a design that has never been jogged is written exactly as it was. */
+  if(fine){
+    const set0 = selectedBricks(), per = Math.round(STUD/LDU);
+    set0.forEach(b=>{
+      let z = (+b.dz||0) + (dir>0 ? 1 : -1);
+      const c = Math.floor(z/per);
+      if(c){ b.base = (b.base||0) + c; z -= c*per; }
+      b.dz = z || undefined;
+    });
+    if(set0.length){ commit(); drawSelection(); }
+    syncHalf(); draw();
+    return;
+  }
   /* THE WHOLE SELECTION MOVES BY THE SAME HALF LAYER (Glen, 2026-08-26, testing the group paste
      live with Jo Watts: "there doesn't appear to be a depth control for grouped objects"). A leg
      is placed in depth as a leg: every member shifts together, so their relative depths cannot
@@ -3839,8 +3855,8 @@ $("bGroup").onclick=groupSel;
 $("bUngroup").onclick=ungroupSel;
 $("bName").onclick=nameGroup;
 $("selName").onclick=()=>{ if(isGroupSel()) nameGroup(); };
-$("spUp").onclick =()=>jogHalf(0.5);
-$("spDn").onclick =()=>jogHalf(-0.5);
+$("spUp").onclick =(e)=>jogHalf(0.5, e.ctrlKey || e.metaKey);
+$("spDn").onclick =(e)=>jogHalf(-0.5, e.ctrlKey || e.metaKey);
 /* The 3D View is a way of looking, not a mode you build in - so it puts the tools down while it
    is up, exactly as Studio does ("press 3D View again to edit"). */
 $("bView3D").onclick=()=>{
@@ -4492,7 +4508,13 @@ function bodySpanX(b){
    midline BEHIND its layer could not say so. `true` is still read as forward, so anything saved
    while it was a flag opens exactly as it was written. */
 const halfOf  = b => b && b.half===true ? 0.5 : ((b && +b.half) || 0);
-const depthOf = b => (b.base||0) + halfOf(b);
+/* THE FINE STEP THROUGH THE DEPTH, in the same LDraw units as across and down. A layer is a stud
+   going into a standing figure and a plate coming towards you in a relief, and the half step splits
+   it once - 10 units and 4. Neither divides 24, which is a brick's own height, nor 4, which is how
+   far a stud stands proud: a part with a stud on its BACK sits that much further out than one
+   without, and until now there was nothing to take it back (Glen, 2026-09-11). */
+const fineZ  = b => (b && +b.dz || 0) * LDU / (mode==="standing" ? STUD : PLATE);   /* in layers */
+const depthOf = b => (b.base||0) + halfOf(b) + fineZ(b);
 /* HOW THICK THE PART IS ALONG THE LINE OF SIGHT, in millimetres. Asked in two places that must not
    disagree - the 3D build, which grows the mesh by it from the mounting face, and the workspace,
    which needs it to know which part is in front of which. */
@@ -5267,7 +5289,7 @@ function serializeState(){
     guide: guideRaw.map(g=>({...g, poly:(g.poly||[]).map(q=>[q[0],q[1]]),
                                    holes:(g.holes||[]).map(h=>h.map(q=>[q[0],q[1]]))})),
     bricks: bricks.map(b=>({ p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-                             base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy,
+                             base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy, dz:b.dz,
                              group:b.group, gpath:b.gpath?b.gpath.slice():undefined,
                              gnames:b.gnames?b.gnames.slice():undefined })) };
 }
@@ -5295,7 +5317,7 @@ function restoreState(st){
   groupSeq = st.groupSeq || 0;
   groupOrder = (st.groupOrder||[]).slice();
   bricks=(st.bricks||[]).map(b=>({ p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-                                   base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy,
+                                   base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy, dz:b.dz,
                                    group:b.group, gpath:b.gpath?b.gpath.slice():undefined,
                                    gnames:b.gnames?b.gnames.slice():undefined }));
   selBrick=null; selMulti=[];              /* the old objects are gone; nothing may point at them */
@@ -5394,7 +5416,7 @@ function copyBrick(){
   if(!set.length){ say("Select a brick first, then Ctrl+C."); return; }
   clipSet=set.map(b=>({from:b,
     snap:{p:{...b.p}, colorIdx:b.colorIdx, col:b.col, row:b.row,
-          base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy,
+          base:b.base, turn:b.turn, rot:b.rot, half:b.half, dx:b.dx, dy:b.dy, dz:b.dz,
           gpath:gpathOf(b).slice(), gnames:gnamesOf(b).slice()}}));
   /* THE CLIPBOARD REMEMBERS THE BRICKS, NOT JUST THEIR READINGS - and the paste follows them. The
      snapshot alone is wrong for the way this application is actually used: Glen moves a part OFF
@@ -5480,7 +5502,7 @@ function mirrorBrick(b, m){
      twice and left the copy half a stud forward, inside its own host. It showed on nothing I tested
      first, because the blue plate carries no half step; the whole of the crane's HEAD does, so the
      part it went wrong on was the eye - the one piece Glen has never been able to get to sit down. */
-  b.base = (facedAway(b) ? m-rear : m-front) - halfOf(b);
+  b.base = (facedAway(b) ? m-rear : m-front) - halfOf(b) - fineZ(b);   /* the jog is kept */
 }
 function faceToViewer(b, mirror){
   if(mode!=="standing") return;
@@ -5524,7 +5546,7 @@ function pasteBrick(){
     const gp=gpathOf(src).map(id=>{ if(!(id in gmap)) gmap[id]=++groupSeq; return gmap[id]; });
     const gn=gnamesOf(src).slice();
     return {p:{...src.p}, colorIdx:src.colorIdx, col:src.col+step, row:src.row,
-            base:src.base, turn:src.turn, rot:src.rot, half:src.half, dx:src.dx, dy:src.dy,
+            base:src.base, turn:src.turn, rot:src.rot, half:src.half, dx:src.dx, dy:src.dy, dz:src.dz,
             group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
             gnames:gn.some(x=>x)?gn:undefined};
   });
@@ -5723,6 +5745,7 @@ function designJSON(){ return (
                               entirely on that grid is saved exactly as it always was */
                            ...(+b.dx?{dx:+b.dx}:{}),
                            ...(+b.dy?{dy:+b.dy}:{}),
+                           ...(+b.dz?{dz:+b.dz}:{}),
                            /* written only when it is FALSE, since all but a tile carry studs */
                            ...(b.p.studs===false?{studs:false}:{}),
                            /* and only when the part has studs on a face, or fewer on top than
@@ -7389,7 +7412,7 @@ $("fOpen").onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new Fil
            rewritten: this is how the old field is READ. */
         base:b.base, turn:b.turn,
         rot:(((b.rot|0) + (b.flip && b.turn!=="face" && b.turn!=="back" ? 2 : 0)) & 3),
-        half:b.half, dx:b.dx, dy:b.dy,
+        half:b.half, dx:b.dx, dy:b.dy, dz:b.dz,
         group:gp.length?gp[0]:undefined, gpath:gp.length?gp:undefined,
         /* names arrive as a list aligned with gpath; a file written before that carries one flat
            name, which belongs to the only level it had */
