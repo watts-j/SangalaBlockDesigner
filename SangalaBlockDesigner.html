@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.217 -->
+<!-- SANGALA_VERSION: 2026-09-11.218 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1201,7 +1201,10 @@ function shape(b,col,row){
   const oL=overLeft(b), oR=overRight(b);
   const r=(rot|0)&3;                              /* about the face it rests on - see rotOf */
   const sp=bodySpanX(b);
-  const x=mx(sp.left), y=mx(row*vUnit());
+  /* THE TOP OF THE BODY, fine step and all. This read the row line alone while the outline and
+     the studs were hung from originY, which carries it - so a jog moved the stud and left the
+     body behind until the offset filled a whole row and the part jumped (Glen, 2026-09-11). */
+  const x=mx(sp.left), y=mx(row*vUnit() + fineY(b));
   /* Turned onto a face, the part presents its PLAN: the dimension across the screen is still its
      width, but the one up the screen is its DEPTH in studs, not its height in plates - and a
      quarter turn swaps those two over. */
@@ -1436,7 +1439,7 @@ function drawBrick(b,ghost){
   const acr=acrossOf(b), dp=fc ? Math.max(1, Math.round(downOf(b)/STUD)) : rowsOf(p);
   /* the BODY, which for an inverted slope reaches past the stud it rests on */
   const oL=overLeft(b), oR=overRight(b), bcols=acr+oL+oR, sp=bodySpanX(b);
-  const x=mx(sp.left), y=mx(b.row*vUnit()), w=mx(sp.width);
+  const x=mx(sp.left), y=mx(b.row*vUnit() + fineY(b)), w=mx(sp.width);
   const h=mx(downOf(b));                        /* the span down the screen, in any attitude */
   /* THE MARKS TAKE THEIR CONTRAST FROM THE BRICK'S OWN COLOUR - see tones() above. A fixed brown
      ring works on Studio's unfilled white shapes and disappears on a filled black one, which is
