@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.211 -->
+<!-- SANGALA_VERSION: 2026-09-11.212 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1222,10 +1222,14 @@ function shape(b,col,row){
   const po = (p.shape==="cone" || p.shape==="round") ? null : planOutline(p, upright, away, fl, r, attOf(b));
   if(po && !po.sil.full){
     const S=po.sil, sc=mx(LDU), uc=(S.u0+S.u1)/2, vc=(S.v0+S.v1)/2, xc=x+w/2, yc=y+h/2;
+    /* UPRIGHT, THE OUTLINE HANGS FROM THE PART'S OWN ORIGIN, wherever the row line leaves it - see
+       originY - and the axis it runs along carries its SIGN. The sign was worked out and then not
+       used here, so a part rolled the other way about drew the same picture as one rolled this way. */
+    const oy = mx(originY(b));
     S.loops.forEach(l=>{
       l.forEach((q,i)=>{
         const X = xc + (po.mu ? uc-q[0] : q[0]-uc)*sc;
-        const Y = upright ? y + q[1]*sc : yc + (po.mv ? vc-q[1] : q[1]-vc)*sc;
+        const Y = upright ? oy + (po.mv ? -q[1] : q[1])*sc : yc + (po.mv ? vc-q[1] : q[1]-vc)*sc;
         i ? ctx.lineTo(X,Y) : ctx.moveTo(X,Y);
       });
       ctx.closePath();
@@ -1533,7 +1537,7 @@ function drawBrick(b,ghost){
     const st = planStuds(b), ox = originX(b), rr = Math.max(1.4, mx(2.4));
     if(st){
       st.forEach(t=>{
-        const px2 = mx(ox + t.x*LDU), py2 = y + mx(t.y*LDU);
+        const px2 = mx(ox + t.x*LDU), py2 = mx(originY(b) + t.y*LDU);
         if(Math.abs(t.dz) > 0.9){
           /* end-on: which face you see depends on which side you are standing */
           const mine = viewBack ? t.dz > 0 : t.dz < 0;
@@ -4342,6 +4346,27 @@ function originX(b){
    rounding up - is now kept across the screen as well.
    Until the geometry arrives there is nothing to measure, so the claimed band stands in, which is
    also the moment the outline is a stand-in. */
+/* WHERE THE ROW LINE CUTS THE PART. The elevation hangs a part from the row it sits in, and it did
+   that by putting the part's ORIGIN on the line - which is right for a part standing square, because
+   an LDraw part's origin is the middle of its top face and its studs stand above it. Roll the part
+   onto its side and the origin is no longer the top of anything: a 1 x 2 plate's origin ends up
+   halfway down its own side, so the body straddled the row line while the studs, which are placed
+   from the origin, sat where the body was not (Glen, 2026-09-11, on 15573 at a quarter turn: "the
+   stud... is in the wrong location on the side").
+   So the line is the top of the part's BODY, whichever face that has become. The body is the part
+   without its studs - the box its declared size gives, hung from the origin the way LDraw hangs it -
+   and for a part standing square its top IS the origin, so nothing about those parts moves. */
+function originY(b){
+  const R = attOf(b), p = b.p;
+  const W = footCols(p)*LDU_PER_STUD, H = (p.h||1)*(PLATE/LDU), D = (p.d||1)*LDU_PER_STUD;
+  let lo = 1e9;
+  for(let i=0;i<8;i++){
+    const q = [(i&1?1:-1)*W/2, (i&2?H:0), (i&4?1:-1)*D/2];
+    const v = R[3]*q[0] + R[4]*q[1] + R[5]*q[2];
+    if(v < lo) lo = v;
+  }
+  return b.row*vUnit() - lo*LDU;
+}
 function bodySpanX(b){
   const oL = overLeft(b), oR = overRight(b);
   const band = {left:(b.col-oL)*STUD + alignDX(b), width:(acrossOf(b)+oL+oR)*STUD};
