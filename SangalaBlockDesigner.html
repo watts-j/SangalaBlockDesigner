@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.224 -->
+<!-- SANGALA_VERSION: 2026-09-11.225 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1483,7 +1483,7 @@ function drawBrick(b,ghost){
   ctx.strokeStyle=edge; ctx.lineWidth=1.3; ctx.stroke();
   /* One stud per stud cell, on the 8 mm pitch. Studio's own two exceptions come with the
      convention: a sloped row carries no stud, and a cone has none where a round brick has one. */
-  if(studded(p) && mode==="standing" && !fc){
+  if(studded(p) && mode==="standing"){
     /* STANDING: the studs stand PROUD OF THE TOP, because that is where they are on a brick you
        look at from the side. Drawn before nothing else covers them - they belong to this part. */
     /* A STUD STANDS ON THE TOP FACE; IT IS NOT SUNK THROUGH IT, AND IT IS NOT A LOZENGE. This drew
@@ -1596,7 +1596,12 @@ function drawBrick(b,ghost){
       studRing(x + mx(STUD)*across, y + mx(PLATE)*s[1], r, studFace, studEdge, hi, sh);
     });
   }
-  if(studded(p) && (mode!=="standing" || fc)){
+  /* RELIEF ONLY. A part laid on its face in a STANDING figure is drawn by the block above, from the
+     studs measured off the part: its marks and their directions are the same question there as for
+     any other attitude, and the grid below gave a wedge sixteen studs in a square where the part has
+     fewer and tapers away from them (Glen, 2026-09-11, on 48933). Relief keeps this, with the rest
+     of its own convention. */
+  if(studded(p) && mode!=="standing"){
     const r=Math.max(1.4, mx(2.4));
     ctx.lineWidth=1;
     /* A PART WHOSE STUDS DO NOT FILL IT SAYS WHERE THEY ARE, and the library measured them from the
@@ -3418,8 +3423,15 @@ function planOutline(p, st, away, fl, rot, R){
      across from the left edge and down from the far end - which is NOT relief's 3D matrix (that one
      mirrors). Putting them on the matrix would turn every relief design at once. */
   const axis = i => { for(let j=0;j<3;j++) if(R && R[i*3+j]) return [j, R[i*3+j]]; return [i, 1]; };
-  const ax = st ? axis(0) : [c ? 0 : 2, (c || -s)];
-  const ay = st ? axis(1) : [(c ? 2 : 0), (away ? 1 : -1)*(c || s)];
+  /* A TIPPED PART IS ON THE MATRIX TOO. This was gated on `st`, which is false for a part laid on
+     its face as well as for relief, so a tipped part kept the old yaw arithmetic - and that
+     arithmetic knows nothing of `turn`, so turning one about the upright axis did not turn its
+     outline (Glen, 2026-09-11, on 48933). RELIEF is what the gate was protecting: it takes the
+     plan's own convention, measured across from the left edge and down from the far end, and moving
+     it onto the matrix would alter every relief design at once. So the test is the MODE. */
+  const byR = mode === "standing";
+  const ax = byR ? axis(0) : [c ? 0 : 2, (c || -s)];
+  const ay = byR ? axis(1) : [(c ? 2 : 0), (away ? 1 : -1)*(c || s)];
   const iu = ax[0], su = ax[1], iv = ay[0], sv = ay[1];
   const sil = silOf(p.id, iu, iv);
   if(!sil) return null;
