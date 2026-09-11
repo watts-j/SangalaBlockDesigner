@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.227 -->
+<!-- SANGALA_VERSION: 2026-09-11.229 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -4463,7 +4463,18 @@ function meshMidX(b){                            /* LDU: the middle of the turne
 }
 /* HOW FAR THE PART MOVES from where centring would put it, in millimetres. Nought for every part
    whose studs already fall on the grid, which is every part standing square. */
+/* ONCE A PART HAS BEEN JOGGED, THE SNAP LETS GO. The snap pulls a part's upward stud onto the
+   nearest column, and it was doing that on every repaint - so a nudge across moved `dx` by a unit
+   and the snap took the unit straight back. The part sat still through five presses and then jumped
+   a whole stud when the nearest column changed, and in a group the others moved while it did not
+   (Glen, 2026-09-11). The snap is a PLACEMENT correction: it says where a part lands when it is put
+   down, not where it must stay. `jogFold` below bakes whatever the snap was contributing into `dx`
+   at the first nudge, so nothing jumps when it lets go. */
 function alignDX(b){
+  /* HAVING BEEN JOGGED IS NOT THE SAME AS BEING AT NOUGHT. The guard read the VALUE, so a part
+     nudged back to zero had the snap come alive again and jumped. It reads whether the field is
+     there at all: jogFold writes one the first time a part is moved across, zero or not. */
+  if(b.dx !== undefined) return 0;
   /* THE SNAP REPAIRS THE ROUNDING AND NOTHING ELSE. A part whose span across IS a whole number of
      studs was never pushed off the grid by the cells, so it must not be pulled onto one now - and
      some parts are off it on purpose. 15573 is the jumper plate: its single stud is centred on a
@@ -4530,6 +4541,12 @@ function originX(b){
    plate's stud sits 10 units from its end, which no coarser step reaches. */
 const UNITS = () => [Math.round(STUD/LDU), Math.round(vUnit()/LDU)];  /* units to a column, to a row */
 const fineX = b => (b && +b.dx || 0) * LDU;      /* mm */
+/* Called before a part is nudged across: it keeps where the snap had put it, in units, so the first
+   press moves it by one unit rather than by whatever the snap was worth. */
+function jogFold(b){
+  if(b.dx !== undefined) return;
+  b.dx = Math.round(alignDX(b)/LDU) || 0;
+}
 const fineY = b => (b && +b.dy || 0) * LDU;
 function originY(b){
   return b.row*vUnit() + fineY(b) - bodyExt(b).lo[1]*LDU;   /* the body's top sits on the row line */
@@ -5170,8 +5187,9 @@ window.addEventListener("mousemove",(e)=>{
     const du=wx-(L.col*pu[0]+(+L.dx||0)), dv=wy-(L.row*pu[1]+(+L.dy||0));
     if(!du && !dv) return;
     moveDrag.members.forEach(x=>{
+      if(du) jogFold(x);                         /* keep the snap, then move from there */
       const X=x.col*pu[0]+(+x.dx||0)+du, Y=x.row*pu[1]+(+x.dy||0)+dv;
-      x.col=Math.floor(X/pu[0]); x.dx=(X-x.col*pu[0])||undefined;
+      x.col=Math.floor(X/pu[0]); x.dx=(X-x.col*pu[0]);
       x.row=Math.floor(Y/pu[1]); x.dy=(Y-x.row*pu[1])||undefined;
     });
     moveDrag.moved=true; draw();
@@ -5404,11 +5422,13 @@ window.addEventListener("keydown",(e)=>{
   const sy =  k==="ArrowUp"   ? -1 : k==="ArrowDown"  ? 1 : 0;
   const perStud = Math.round(STUD/LDU), perRow = Math.round(vUnit()/LDU);
   list.forEach(b=>{
+    if(sx) jogFold(b);                           /* keep the snap, then move from there */
     let dx=(+b.dx||0)+sx, dy=(+b.dy||0)+sy;
     const cx=Math.floor(dx/perStud), cy=Math.floor(dy/perRow);
     if(cx){ b.col+=cx; dx-=cx*perStud; }
     if(cy){ b.row+=cy; dy-=cy*perRow; }
-    b.dx = dx || undefined; b.dy = dy || undefined;
+    b.dx = sx ? dx : (dx || undefined);          /* a jogged part keeps its field, nought and all */
+    b.dy = dy || undefined;
   });
   e.preventDefault(); draw(); commit();
 });
@@ -5781,7 +5801,9 @@ function designJSON(){ return (
                            /* the fine step across and down, in LDraw units, written only when the
                               part has been nudged off the stud-and-plate grid - so a design built
                               entirely on that grid is saved exactly as it always was */
-                           ...(+b.dx?{dx:+b.dx}:{}),
+                           /* written whenever the part has been jogged across, nought included:
+                              the field's PRESENCE is what tells the snap to keep its hands off */
+                           ...(b.dx!==undefined?{dx:+b.dx||0}:{}),
                            ...(+b.dy?{dy:+b.dy}:{}),
                            ...(+b.dz?{dz:+b.dz}:{}),
                            /* written only when it is FALSE, since all but a tile carry studs */
