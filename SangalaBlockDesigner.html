@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.210 -->
+<!-- SANGALA_VERSION: 2026-09-11.211 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1512,31 +1512,49 @@ function drawBrick(b,ghost){
        sideways, which is the whole case this was written for, got the column studs straight back.
        Glen, 2026-09-11, on 15573 rolled onto its side: "the stud still appears on top." What decides
        the fallback is whether the part's geometry has ARRIVED, not what it says. */
-    const mStud = ldrMesh[p.id];
-    const measured = !!(mStud && mStud.studs);
-    const ups = upStuds(b), ox = originX(b);
-    const spots = measured
-      ? ups.map(u=>({x:mx(ox + u.x*LDU), y:y + mx(u.y*LDU)}))
-      : (function(){ const out=[];
-          for(let cx=0;cx<bcols;cx++){
-            if(topCols && topCols.indexOf(cx-oL)<0) continue;     /* studs sit on the BODY, overhang included */
-            const px2 = x+mx(STUD)*(cx+.5);
-            if(!onTop(px2, y+Math.max(1.5, sHt*0.35))) continue;  /* the fallen part of a ramp carries none */
-            out.push({x:px2, y:y});
-          }
-          return out; })();
-    spots.forEach(sp=>{
-      const px2=sp.x, y=sp.y, sL=px2-sw/2, sRt=px2+sw/2, sT=y-sHt;
+    /* A STUD POINTS SOMEWHERE, AND THE DRAWING FOLLOWS IT. The nub is the same shape in every case -
+       4.8 mm across the stud and 1.8 mm out of the face it stands on - so it is built in the stud's
+       own frame: `u` out along the stud, `v` across it, and the two far corners eased. Drawn up, it
+       is the glyph this has always drawn. */
+    const nub = (px2,py2,ux,uy) => {
+      const vx=-uy, vy=ux, a=sHt, hw=sw/2;
+      const P=(t,q)=>[px2+ux*t+vx*q, py2+uy*t+vy*q];
+      const p0=P(0,-hw), p1=P(a-sR,-hw), c1=P(a,-hw), p2=P(a,-hw+sR),
+            p3=P(a,hw-sR), c2=P(a,hw), p4=P(a-sR,hw), p5=P(0,hw);
       ctx.beginPath();
-      ctx.moveTo(sL, y);
-      ctx.lineTo(sL, sT+sR);
-      ctx.quadraticCurveTo(sL, sT, sL+sR, sT);
-      ctx.lineTo(sRt-sR, sT);
-      ctx.quadraticCurveTo(sRt, sT, sRt, sT+sR);
-      ctx.lineTo(sRt, y);
+      ctx.moveTo(p0[0],p0[1]); ctx.lineTo(p1[0],p1[1]);
+      ctx.quadraticCurveTo(c1[0],c1[1], p2[0],p2[1]);
+      ctx.lineTo(p3[0],p3[1]);
+      ctx.quadraticCurveTo(c2[0],c2[1], p4[0],p4[1]);
+      ctx.lineTo(p5[0],p5[1]);
       ctx.fillStyle=studFace; ctx.fill();
       ctx.strokeStyle=studEdge; ctx.lineWidth=1; ctx.stroke();
-    });
+    };
+    const st = planStuds(b), ox = originX(b), rr = Math.max(1.4, mx(2.4));
+    if(st){
+      st.forEach(t=>{
+        const px2 = mx(ox + t.x*LDU), py2 = y + mx(t.y*LDU);
+        if(Math.abs(t.dz) > 0.9){
+          /* end-on: which face you see depends on which side you are standing */
+          const mine = viewBack ? t.dz > 0 : t.dz < 0;
+          (mine ? studRing : socketRing)(px2, py2, rr, studFace, studEdge, hi, sh);
+        } else {
+          const L = Math.hypot(t.dx, t.dy) || 1;
+          nub(px2, py2, t.dx/L, t.dy/L);
+        }
+      });
+    } else {
+      /* THE COLUMN RULE, for a part whose geometry has not arrived - the same second or so in which
+         the outline is a stand-in too. It decides on whether the file has been READ, never on what
+         the file says: asking whether the measured list was empty handed the column studs straight
+         back to the very parts the measuring was written for. */
+      for(let cx=0;cx<bcols;cx++){
+        if(topCols && topCols.indexOf(cx-oL)<0) continue;     /* studs sit on the BODY, overhang included */
+        const px2 = x+mx(STUD)*(cx+.5);
+        if(!onTop(px2, y+Math.max(1.5, sHt*0.35))) continue;  /* the fallen part of a ramp carries none */
+        nub(px2, y, 0, -1);
+      }
+    }
   }
   /* STUDS ON A FACE, which a profile view sees END-ON - so they are drawn as the ring, the mark this
      application already uses for a connector pointing at the viewer. Glen, 2026-08-17, on 2434: "I
@@ -1548,7 +1566,10 @@ function drawBrick(b,ghost){
      the one position a profile shows. Flipping the part mirrors them with the body. Only in the
      upright view: turned onto a face, or laid down in relief, these studs point across the screen
      and would be seen edge-on, where a ring would be a lie. */
-  if(p.side && p.side.length && mode==="standing" && !fc){
+  /* ONLY WHERE THE PART HAS NOT BEEN MEASURED. A library entry can carry a hand-written `side`
+     array, and the studs read off the part file now cover the same ground - drawn from the geometry
+     rather than from a list somebody typed. Both would draw the ring twice. */
+  if(p.side && p.side.length && mode==="standing" && !fc && !planStuds(b)){
     const r=Math.max(1.4, mx(2.4));
     p.side.forEach(s=>{
       const across = fl ? (p.w - s[0]) : s[0];
@@ -4243,6 +4264,26 @@ function upStudX(b){                             /* the leftmost, to the leftmos
   const u = upStuds(b);
   return u.length ? u[0].x : null;
 }
+/* EVERY STUD, WHERE IT IS AND WHICH WAY IT POINTS, in the figure's frame - x across, y down, z away
+   from the viewer. The plan draws all of them: a stud pointing up or down or to either side is seen
+   from the SIDE and is a nub on that edge of the part; one pointing at the viewer or away from him
+   is seen END-ON and is the ring this application already uses for a connector facing you. Asking
+   only for the upward ones is what left 15573 on its side with no stud at all, when the stud it has
+   is on its right (Glen, 2026-09-11). Deduped on where they land in the drawing, because a profile
+   collapses the depth and a brick's two rows of studs fall on each other. */
+function planStuds(b){
+  const m = ldrMesh[b.p.id];
+  if(!m || !m.studs) return null;                /* null means the part has not been read yet */
+  const R = attOf(b), seen = Object.create(null), out = [];
+  m.studs.forEach(t=>{
+    const P = [0,1,2].map(i => R[i*3]*t.p[0] + R[i*3+1]*t.p[1] + R[i*3+2]*t.p[2]);
+    const D = [0,1,2].map(i => R[i*3]*t.d[0] + R[i*3+1]*t.d[1] + R[i*3+2]*t.d[2]);
+    const k = Math.round(P[0])+","+Math.round(P[1])+","+Math.round(D[0])+","+Math.round(D[1])+","+Math.round(D[2]);
+    if(seen[k]) return;
+    seen[k] = 1; out.push({x:P[0], y:P[1], dx:D[0], dy:D[1], dz:D[2]});
+  });
+  return out;
+}
 function meshMidX(b){                            /* LDU: the middle of the turned mesh, along the figure's x */
   const m = ldrMesh[b.p.id];
   if(!m || !m.box) return 0;
@@ -4258,6 +4299,14 @@ function meshMidX(b){                            /* LDU: the middle of the turne
 /* HOW FAR THE PART MOVES from where centring would put it, in millimetres. Nought for every part
    whose studs already fall on the grid, which is every part standing square. */
 function alignDX(b){
+  /* THE SNAP REPAIRS THE ROUNDING AND NOTHING ELSE. A part whose span across IS a whole number of
+     studs was never pushed off the grid by the cells, so it must not be pulled onto one now - and
+     some parts are off it on purpose. 15573 is the jumper plate: its single stud is centred on a
+     1 x 2 footprint, which puts it on the LINE between two columns, and that is the whole reason the
+     part exists ("the neck and head can be on the left side or the right side, but not in the
+     middle" - Glen, 2026-08-17). Snapping it would have moved every jumper plate half a stud. */
+  const frac = spanOf(b)[0]/STUD;
+  if(Math.abs(frac - Math.round(frac)) < 1e-6) return 0;
   const u = upStudX(b);
   if(u === null) return 0;
   const oL = overLeft(b), oR = overRight(b);
