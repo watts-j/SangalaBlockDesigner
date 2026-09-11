@@ -61,3 +61,14 @@ library the application can import.
 
 ## License
 CC0 1.0 Universal — see `LICENSE`. Sangala Studio and Sangala Mosaic are the same.
+
+## Checking the geometry without a browser
+
+`node tools/check_geometry.js` puts every part in the ordering table into each of the twenty-four
+attitudes and asks the plan, the 3D view and the LDraw export where it goes. It fails if the three
+disagree, if any of them throws, or if a part's upward studs land off the stud grid. `--all` sweeps
+the whole table; with no flag it takes the parts that have been in question.
+
+It runs the application's own code — `tools/geom_harness.js` loads `SangalaBlockDesigner.html`'s
+script behind stubs for the page — so it checks what ships rather than a copy of it. It needs the
+LDraw folder beside it and nothing else: no bridge, no browser, no LDView.

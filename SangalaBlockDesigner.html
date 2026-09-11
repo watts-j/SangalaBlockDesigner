@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.223 -->
+<!-- SANGALA_VERSION: 2026-09-11.224 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1183,9 +1183,11 @@ const overCols  = p => p.shape==="invslope" ? Math.max(0, rampCols(p)-footCols(p
    of the brick beside it. And when the thin end runs into the DEPTH rather than across the screen,
    NEITHER side gets a column: this used to hand the whole overhang to the left in that case, which
    widened a quarter-turned inverted slope by a stud it does not have. */
-const overDir   = b => { const R = attOf(b); return -R[2]; };   /* the part's -z, along the figure's x */
-const overLeft  = b => overDir(b) < 0 ? overCols(b.p) : 0;
-const overRight = b => overDir(b) > 0 ? overCols(b.p) : 0;
+/* HOW FAR THE BODY REACHES PAST THE FACE IT RESTS ON, to the left and to the right, in studs. Both
+   boxes are measured, so this needs no rule about slopes and no stored flag - and it is right for a
+   part turned any way, which neither of those ever was. */
+const overLeft  = b => Math.max(0, (footX(b).lo - bodyExt(b).lo[0])/LDU_PER_STUD);
+const overRight = b => Math.max(0, (bodyExt(b).hi[0] - footX(b).hi)/LDU_PER_STUD);
 
 /* A PLAN TURNED A QUARTER AT A TIME, counterclockwise, on a screen whose y runs DOWN: (u,v) becomes
    (v, W-u), where W is how many studs across the plan is BEFORE that turn - so the box swaps its two
@@ -3087,7 +3089,21 @@ function ldrFlatten(files, name){
      rotated"). A stud on a FACE is not folded, here or in silOf: it is not along the part's y, and
      both keep it. */
   const bbox = [box[0], Math.max(box[1], 0), box[2], box[3], box[4], box[5]];
-  return {tris, box, bbox, studs};
+  /* WHAT THE PART RESTS ON, MEASURED. The footprint is the face it stands on, and that face is the
+     geometry lying in the bottom plane of its body - which is the whole underside of a brick, and
+     only the thick end of an inverted slope, whose underside is cut away. It was a rule keyed on the
+     part's KIND before ("an inverted slope rests on one stud"), and a rule about kinds is the thing
+     that has to be written again for every part the library adds. This is the same answer taken from
+     the part itself, so a part nobody has thought about comes out right. */
+  const yBot = bbox[4];
+  let f0=1e9, f1=-1e9, g0=1e9, g1=-1e9, any=false;
+  tris.forEach(t => { if(t[0][1] > yBot-0.75 && t[1][1] > yBot-0.75 && t[2][1] > yBot-0.75){
+    any = true;
+    t.forEach(v => { if(v[0]<f0) f0=v[0]; if(v[0]>f1) f1=v[0];
+                     if(v[2]<g0) g0=v[2]; if(v[2]>g1) g1=v[2]; }); } });
+  const fbox = any ? [f0, yBot, g0, f1, yBot, g1]
+                   : [bbox[0], yBot, bbox[2], bbox[3], yBot, bbox[5]];
+  return {tris, box, bbox, fbox, studs};
 }
 
 /* Ask once per part number, and never twice. A machine with no bridge answers nothing, which is not
@@ -3607,7 +3623,7 @@ function bricksToTris(){
         boxTris(x0,x1,y0,y1,z0,z1,mine);
       }
       if(!real && studded(p)){
-        for(let cx=0, ac=footCols(p); cx<ac; cx++){
+        for(let cx=0, ac=acrossOf(b); cx<ac; cx++){
           if(p.shape==="slope" && (flipOf(b) ? cx===ac-1 : cx===0)) continue;
           for(let dy=0; dy<d; dy++)
             cylZ(x0+STUD*(cx+0.5), y1-STUD*(dy+0.5), z1, z1+1.8, 2.4, mine);
@@ -3668,7 +3684,7 @@ function bricksToTris(){
     if(!real && studded(p)){
       for(let ry=0;ry<d;ry++){
         if(p.shape==="slope" && (flipOf(b) ? ry===0 : ry===d-1)) continue;
-        for(let cx=0;cx<footCols(p);cx++)
+        for(let cx=0;cx<acrossOf(b);cx++)
           cyl(x0+STUD*(cx+0.5), z1-STUD*(ry+0.5), y0, y0-1.8, 2.4, mine);
       }
     }
@@ -4260,6 +4276,48 @@ function spun(b, axis){
    each of those lands. For every attitude the old code could reach this returns exactly what the old
    code returned. */
 const footBox = b => [footCols(b.p)*STUD, (b.p.h||1)*PLATE, (b.p.d||1)*STUD];
+/* ONE MEASUREMENT, AND EVERY SPAN COMES OFF IT. The part's own box, carried through the orientation,
+   answers how far it reaches along each of the figure's axes. There were two descriptions of a part
+   before this - the declared w, d and h, and the geometry - and they agree exactly for a part
+   standing square, which is why every fault between them waited until a part was turned. The
+   declared figures now name the part and nothing else; the drawing, the cells, the layers and both
+   exports all read the geometry.
+   `bbox` is the body with its studs folded onto the top face, the same fold the outline makes;
+   `fbox` is the face the part rests on. Without a mesh - the second or so before the part arrives -
+   the declared box stands in, as it always did. */
+function extOf(b, which){
+  const m = ldrMesh[b.p.id], R = attOf(b);
+  let B = m && m[which];
+  if(!B){
+    const e = footBox(b);                       /* the stand-in: origin at the top face, as LDraw has it */
+    const W = e[0]/LDU, H = e[1]/LDU, D = e[2]/LDU;
+    B = which === "fbox" ? [-W/2, H, -D/2, W/2, H, D/2] : [-W/2, 0, -D/2, W/2, H, D/2];
+  }
+  const lo=[1e9,1e9,1e9], hi=[-1e9,-1e9,-1e9];
+  for(let i=0;i<8;i++){
+    const q = [B[i&1?3:0], B[i&2?4:1], B[i&4?5:2]];
+    for(let a=0;a<3;a++){
+      const v = R[a*3]*q[0] + R[a*3+1]*q[1] + R[a*3+2]*q[2];
+      if(v<lo[a]) lo[a]=v; if(v>hi[a]) hi[a]=v;
+    }
+  }
+  return {lo, hi};
+}
+const bodyExt = b => extOf(b, "bbox");
+const footExt = b => extOf(b, "fbox");
+/* THE FACE IT RESTS ON, ACROSS THE SCREEN, SQUARED UP TO THE STUD GRID. What is measured is a
+   fraction under the nominal: a brick's underside is chamfered, and a round brick's is a tube two
+   units inside its own wall, so placing a part by the raw edge of what it touches slid every one of
+   them a unit or two sideways. A real part rests on a WHOLE number of studs, so the measure is
+   rounded to that and centred where the face itself is centred.
+   Rolled onto its side a part rests on no face at all in this view - the face is edge-on and has no
+   width - and then the BODY is what is placed, with the stud snap to bring it back to the grid. */
+function footX(b){
+  const f = footExt(b), e = bodyExt(b), w = f.hi[0] - f.lo[0];
+  if(w < LDU_PER_STUD/2) return {lo:e.lo[0], hi:e.hi[0], studs:0};
+  const n = Math.max(1, Math.round(w/LDU_PER_STUD)), c = (f.lo[0]+f.hi[0])/2;
+  return {lo: c - n*LDU_PER_STUD/2, hi: c + n*LDU_PER_STUD/2, studs:n};
+}
 /* THE CELLS ARE MEASURED WITHOUT partYaw, and that distinction matters. partYaw turns the part's own
    MESH so a slope's ramp lies across the profile; the w and d a part is filed under are already
    stated the way the plan reads them, across first. Turning the footprint box by partYaw as well
@@ -4346,13 +4404,14 @@ function alignDX(b){
      1 x 2 footprint, which puts it on the LINE between two columns, and that is the whole reason the
      part exists ("the neck and head can be on the left side or the right side, but not in the
      middle" - Glen, 2026-08-17). Snapping it would have moved every jumper plate half a stud. */
-  const frac = spanOf(b)[0]/STUD;
+  /* THE BODY'S span decides, not the footprint's. A part rolled onto its side rests on no face at
+     all in this view - its resting face is edge-on and has no width - so a test on the footprint
+     read zero, called that a whole number of studs and let the part stay off the grid. */
+  const e = bodyExt(b), frac = (e.hi[0]-e.lo[0])/LDU_PER_STUD;
   if(Math.abs(frac - Math.round(frac)) < 1e-6) return 0;
   const u = upStudX(b);
   if(u === null) return 0;
-  const oL = overLeft(b), oR = overRight(b);
-  const mid = ((b.col - oL) + (acrossOf(b) + oL + oR)/2) * LDU_PER_STUD;   /* the band's middle */
-  const at  = mid - meshMidX(b) + u;             /* where that stud falls with the part centred */
+  const at = b.col*LDU_PER_STUD + fineX(b)/LDU - footX(b).lo + u;        /* unsnapped */
   /* SNAP TO THE NEAREST COLUMN, NOT TO THE FIRST ONE. Sending the leftmost stud to the leftmost
      column it claims moved every part whose studs do not start at its left edge: a 2 x 1 slope
      carries its one stud at the FLAT end, so that rule slid it a whole stud sideways. A part is
@@ -4369,10 +4428,12 @@ function alignDX(b){
 }
 /* WHERE THE PART'S OWN ORIGIN SITS along the figure's x, in millimetres - the one point everything
    measured off the part hangs from, the studs above included. */
+/* THE PART IS PUT DOWN BY THE FACE IT RESTS ON: the left edge of that face lands on the column the
+   builder pointed at, and the body falls where that leaves it - which is what an overhang IS. The
+   position was worked out from the middle of the cells it claims before, so every part whose body
+   and footprint differ had to be nudged back by a rule. */
 function originX(b){
-  const oL = overLeft(b), oR = overRight(b);
-  const mid = ((b.col - oL) + (acrossOf(b) + oL + oR)/2) * LDU_PER_STUD;
-  return (mid - meshMidX(b))*LDU + alignDX(b) + fineX(b);
+  return b.col*STUD + fineX(b) + alignDX(b) - footX(b).lo*LDU;
 }
 /* THE BODY IS DRAWN AT ITS TRUE WIDTH, NOT AT THE WIDTH OF THE CELLS IT CLAIMS. A cell is a whole
    cell, so a part that is not a whole number of them across rounds UP to claim them - and drawing
@@ -4405,30 +4466,11 @@ const UNITS = () => [Math.round(STUD/LDU), Math.round(vUnit()/LDU)];  /* units t
 const fineX = b => (b && +b.dx || 0) * LDU;      /* mm */
 const fineY = b => (b && +b.dy || 0) * LDU;
 function originY(b){
-  const R = attOf(b), p = b.p;
-  const W = footCols(p)*LDU_PER_STUD, H = (p.h||1)*(PLATE/LDU), D = (p.d||1)*LDU_PER_STUD;
-  let lo = 1e9;
-  for(let i=0;i<8;i++){
-    const q = [(i&1?1:-1)*W/2, (i&2?H:0), (i&4?1:-1)*D/2];
-    const v = R[3]*q[0] + R[4]*q[1] + R[5]*q[2];
-    if(v < lo) lo = v;
-  }
-  return b.row*vUnit() + fineY(b) - lo*LDU;
+  return b.row*vUnit() + fineY(b) - bodyExt(b).lo[1]*LDU;   /* the body's top sits on the row line */
 }
 function bodySpanX(b){
-  const oL = overLeft(b), oR = overRight(b);
-  const band = {left:(b.col-oL)*STUD + alignDX(b) + fineX(b), width:(acrossOf(b)+oL+oR)*STUD};
-  const m = ldrMesh[b.p.id];
-  if(!m || !m.box) return band;
-  const R = attOf(b), B = m.bbox || m.box;       /* the body, studs folded - see ldrFlatten */
-  let lo=1e9, hi=-1e9;
-  for(let i=0;i<8;i++){
-    const q = [B[i&1?3:0], B[i&2?4:1], B[i&4?5:2]];
-    const v = R[0]*q[0] + R[1]*q[1] + R[2]*q[2];
-    if(v<lo) lo=v; if(v>hi) hi=v;
-  }
-  const ox = originX(b);
-  return {left: ox + lo*LDU, width: (hi-lo)*LDU};
+  const e = bodyExt(b), ox = originX(b);
+  return {left: ox + e.lo[0]*LDU, width: (e.hi[0]-e.lo[0])*LDU};
 }
 /* WHERE A PART ACTUALLY SITS THROUGH THE FIGURE, layer and half step together. Everything that puts
    geometry in depth asks this - the 3D view, the LDraw export, the drawing order and the shadow - so
@@ -4444,7 +4486,7 @@ const depthOf = b => (b.base||0) + halfOf(b);
    which needs it to know which part is in front of which. */
 function thickToward(b){
   const p = b.p;
-  return mode==="standing" ? spanOf(b)[2] : (p.h||1)*PLATE;
+  return mode==="standing" ? deepOf2(b)*STUD : (p.h||1)*PLATE;   /* measured - see bodyExt */
 }
 /* WHERE THE PART'S NEAREST SURFACE IS, in layers, from where the viewer is standing.
    `base` marks the face a part is MOUNTED BY, and that is not the face you see: a part reaches
@@ -4472,9 +4514,9 @@ const quarter = b => (rotOf(b) & 1) === 1;                /* an odd turn swaps t
 /* THE CELLS A PART CLAIMS, from its span rather than from a table of attitudes - see spanOf. A cell
    is a whole cell, so a part whose span is not a whole number of them rounds UP: a brick on its side
    is 9.6 mm across, which is one stud and a fifth, and it claims two. */
-const acrossOf= b => Math.max(1, Math.ceil(spanOf(b)[0]/STUD - 1e-6));   /* cells across the screen */
-const downOf  = b => spanOf(b)[1];                        /* mm down the screen */
-const deepOf2 = b => spanOf(b)[2]/STUD;                   /* studs into the figure */
+const acrossOf= b => { const f=footX(b); return Math.max(1, f.studs || Math.ceil((f.hi-f.lo)/LDU_PER_STUD - 1e-6)); };
+const downOf  = b => { const e=bodyExt(b); return (e.hi[1]-e.lo[1])*LDU; };   /* mm down the screen */
+const deepOf2 = b => { const e=bodyExt(b); return (e.hi[2]-e.lo[2])/LDU_PER_STUD; };  /* studs in */
 const rowsFor = b => Math.max(1, Math.ceil(downOf(b)/vUnit() - 1e-6));
 /* WHAT THE PART ACTUALLY COVERS, IN MILLIMETRES - not the cells it rounds up to. Two parts overlap
    when their bodies overlap; a part is on the plate when its body is. Counting in whole cells is
@@ -5871,7 +5913,7 @@ function toLdr(){
              ""];
   bricks.forEach(b=>{
     if(parked(b)) return;                 /* a candidate on the cork is not part of the design */
-    const p=b.p, w=footCols(p), d=p.d||1, h=p.h||1;
+    const p=b.p, w=acrossOf(b), d=p.d||1, h=p.h||1;
     /* placed by the middle of its BODY, not of its footprint - see `overCols` */
     const oL=overLeft(b), oR=overRight(b);
     const bx=((b.col - oL) + (w + oL + oR)/2)*LDU_STUD;   /* where the cell's centre is */
