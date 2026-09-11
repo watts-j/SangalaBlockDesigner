@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.229 -->
+<!-- SANGALA_VERSION: 2026-09-11.230 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1465,12 +1465,12 @@ function drawBrick(b,ghost){
      function at full strength. */
   ctx.globalAlpha = ghost ? .5 : (seeThrough ? seeAlpha : 1);
 
-  /* A PLACED BRICK STANDS PROUD OF WHAT IS BEHIND IT, so it casts a small shadow, and the
-     further out it is stacked the further the shadow falls. Flat colour alone is what made a
-     black brick read as a mass: nothing said it was an object sitting on something. */
-  const off=Math.max(1, mx(0.7)+depthOf(b)*mx(0.22));
-  ctx.save(); ctx.globalAlpha=(ghost?.12:.22)*(seeThrough&&!ghost?seeAlpha:1); ctx.translate(off,off);   /* the shadow fades with its brick */
-  shape(b,b.col,b.row); ctx.fillStyle="#000"; ctx.fill(); ctx.restore();
+  /* NO DROP SHADOW. A brick used to cast one, offset further the further out it was stacked, so
+     that a flat colour read as an object sitting on something rather than as a mass. It cost more
+     than it gave: the offset is a second, silent way of saying depth, it falls down and to the
+     right whatever the figure is doing, and against a plan where depth is already said by what
+     covers what it reads as a part in a place it is not (Glen, 2026-09-11: "These can create
+     confusing perspectives"). */
 
   shape(b,b.col,b.row);
   ctx.fillStyle=c.hex; ctx.fill();
