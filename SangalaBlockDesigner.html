@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.222 -->
+<!-- SANGALA_VERSION: 2026-09-11.223 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -1239,6 +1239,14 @@ function shape(b,col,row){
     });
     return {x,y,w,h};
   }
+  /* A MEASURED PART THAT FILLS ITS OWN BOX IS THE BOX - never the hand-drawn shape its KIND would
+     have. The outline is skipped here only to save tracing a rasterized rectangle when an exact one
+     will do; it fell through to the stand-ins below instead, and those draw a slope as a wedge
+     whatever way it is lying. Turn a 2 x 2 slope so its ramp runs into the figure and its profile is
+     a plain rectangle - but the wedge was drawn anyway, and the part's second stud, which is real and
+     correctly placed, stood over the fall of a ramp that is not there (Glen, 2026-09-11).
+     The stand-ins are what to draw when there is no geometry to ask, and nothing else. */
+  if(po){ ctx.rect(x,y,w,h); ctx.closePath(); return {x,y,w,h}; }
   /* STANDING is a SIDE view, so a part shows its elevation, not its plan (Glen: "the slope and
      cone are shown correctly in the 3D view but incorrectly in the 2D view"). From the side a
      slope is a wedge, a cone is a trapezoid, and a round brick is a plain rectangle - a cylinder
