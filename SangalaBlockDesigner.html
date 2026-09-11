@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.215 -->
+<!-- SANGALA_VERSION: 2026-09-11.216 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -5007,10 +5007,12 @@ window.addEventListener("mousemove",(e)=>{
      it is Studio's add-to-set, which deliberately does NOT start a move, and one key cannot mean two
      things over the same gesture. Control is free on the canvas - it carries the clipboard and undo
      shortcuts, which are key presses, not drags.
-     NOT THE COMMAND KEY. The undo and copy shortcuts take either, because a Mac keyboard says Cmd
-     where a Windows one says Ctrl; a DRAG is different, since Ctrl-drag on a Mac is a right-click.
-     This reads Control alone, and the program is opened from a Windows shortcut. */
-  if(e.ctrlKey){
+     COMMAND COUNTS TOO, so the same gesture serves both keyboards - the test the undo and copy
+     shortcuts already use. On Windows the Windows key may open the Start menu, so a builder there
+     holds Control; on a Mac, Command. Reading it on the MOVE rather than the press matters on a Mac
+     for a second reason: the system takes Control with a CLICK for its context menu, and `ctrlKey`
+     is not detectable on a click event there (MDN, MouseEvent.ctrlKey). On a move it is. */
+  if(e.ctrlKey || e.metaKey){
     const pu=UNITS();
     const wx=moveDrag.ux + Math.round((c.mmx-moveDrag.px)/LDU);
     const wy=moveDrag.uy + Math.round((c.mmy-moveDrag.py)/LDU);
