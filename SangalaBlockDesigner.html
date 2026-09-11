@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- SANGALA_VERSION: 2026-09-11.218 -->
+<!-- SANGALA_VERSION: 2026-09-11.220 -->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -3458,13 +3458,21 @@ function ldrTris(b, p, x0, x1, y0, y1, z0, z1){
               : [c*LDU, 0, s*LDU,  0, LDU, 0,  s*LDU, 0, -c*LDU];
   const put = q => [A[0]*q[0]+A[1]*q[1]+A[2]*q[2], A[3]*q[0]+A[4]*q[1]+A[5]*q[2], A[6]*q[0]+A[7]*q[1]+A[8]*q[2]];
   let bx0=1e9,by0=1e9,bz0=1e9,bx1=-1e9,by1=-1e9,bz1=-1e9;
+  const MB = m.bbox || m.box;                  /* the body, studs folded - the plan measures the same */
   for(let i = 0; i < 8; i++){
-    const q = put([m.box[i&1?3:0], m.box[i&2?4:1], m.box[i&4?5:2]]);
+    const q = put([MB[i&1?3:0], MB[i&2?4:1], MB[i&4?5:2]]);
     bx0=Math.min(bx0,q[0]); bx1=Math.max(bx1,q[0]);
     by0=Math.min(by0,q[1]); by1=Math.max(by1,q[1]);
     bz0=Math.min(bz0,q[2]); bz1=Math.max(bz1,q[2]);
   }
-  const tx = (x0+x1)/2 - (bx0+bx1)/2 + alignDX(b);   /* placed by its upward stud - see alignDX */
+  /* THE PLAN AND THE 3D VIEW ARE PLACED BY THE SAME TWO FUNCTIONS. This worked the position out
+     again from the cell band, so every correction the plan gained had to be copied here by hand and
+     three of them were not: the fine step, the body-top anchoring, and the folded box. Glen, 2026-09-11,
+     with 87087's side stud tucked under a column: right in the plan, out both ways in 3D. originX and
+     originY are where the part's own origin sits along the figure's x and y; the scene's z runs UP
+     from the plate, which is why the height is taken from it. Relief keeps its own arithmetic - its
+     mapping is not being moved. */
+  const tx = (st || fc) ? originX(b) : (x0+x1)/2 - (bx0+bx1)/2 + alignDX(b);
   /* A STUDS-BACK PART IS ANCHORED BY ITS OTHER END, because its matrix runs the part's own depth the
      other way. y0 is the near end of the band for a part whose studs face the viewer and the FAR end
      for one whose studs face away, so anchoring both at y0 grew a studs-back part forward out of its
@@ -3477,7 +3485,7 @@ function ldrTris(b, p, x0, x1, y0, y1, z0, z1){
      studs-back plate 3.2 mm forward, each by its own thickness, while every studs-forward part
      agreed with the plan exactly. */
   const ty = st ? (y0+y1)/2 - (by0+by1)/2 : (facedAway(b) ? y1 : y0);
-  const tz = st ? z1 : (z0+z1)/2 - (bz0+bz1)/2;        /* standing: the body's top face is at z1 */
+  const tz = st ? H - originY(b) : (z0+z1)/2 - (bz0+bz1)/2;   /* standing: the body's top is the row line */
   /* Y-down becoming z-up mirrors the part, so the winding turns with it */
   const turn = ldrDet(A) < 0;
   const out = [];
@@ -5863,13 +5871,14 @@ function toLdr(){
        face); centring on the layer line instead would only agree while every part is one stud deep. */
     const dTurn = deepOf2(b);                 /* how deep it runs once the quarter turn is applied */
     if(mode==="relief"){ bz=(b.row + d/2)*LDU_STUD;              y=-(depthOf(b) + h)*LDU_PLATE; }
-    else               { bz=-(depthOf(b) + dTurn/2)*LDU_STUD;   y=-(plateRows - b.row)*LDU_PLATE; }
+    else               { bz=-(depthOf(b) + dTurn/2)*LDU_STUD;   y=-plateRows*LDU_PLATE + originY(b)/LDU; }
     /* A flipped part is TURNED, not mirrored: mirroring a slope makes a part that does not exist.
        Half a turn about the vertical axis, which in LDraw's downward Y is (-1,0,0 / 0,1,0 / 0,0,-1).
        THE SAME TURN THE 3D VIEW APPLIES GOES IN HERE, from the one function that decides it - the
        snapshot is the same design seen by another renderer, and a part turned in one and not the
        other is the defect Glen found in the crest. A quarter turn is (0,0,1 / 0,1,0 / -1,0,0). */
-    const box = ldrMesh[p.id] && ldrMesh[p.id].box;
+    /* the body, studs folded onto the top face - the plan and the 3D view measure the same */
+    const box = ldrMesh[p.id] && (ldrMesh[p.id].bbox || ldrMesh[p.id].box);
     /* THE ONE ORIENTATION, and c and s are read back OUT of it for the geometry correction below,
        which needs to carry the part's own centre through the same turn. */
     const RM = attOf(b);
@@ -5933,7 +5942,7 @@ function toLdr(){
          Determinant +1 either way: a reflected wedge is a part that does not exist. */
       const M = RM;                        /* attOf already IS this matrix - checked, all 24 */
       const dFace = rq&1 ? p.w : d;                                   /* what hangs down, once turned */
-      const cy = -(plateRows - b.row)*LDU_PLATE + dFace*LDU_STUD/2;   /* down from the row it hangs on */
+      const cy = -(plateRows - b.row)*LDU_PLATE + fineY(b)/LDU + dFace*LDU_STUD/2;  /* down from its row */
       /* IT MOUNTS BY ITS UNDERSIDE, so that face sits ON the layer plane - it is not centred in a
          band. Centring buried the eye two units into the head, because a part's box includes its
          STUD, which stands out on one side only: the box is 12 units through where the plate itself
@@ -5951,13 +5960,17 @@ function toLdr(){
       const zMount = -depthOf(b)*LDU_STUD + (facedAway(b) ? yBot : -yBot);
       /* The correction is the box centre carried through M, subtracted from the placement. M's third
          row has no x or z term in either attitude, so the depth needs none - as it never did. */
-      out.push("1 "+COLORS[b.colorIdx].code+" "+ldNum(bx - (M[0]*gx + M[2]*gz) + alignDX(b)/LDU)+" "+ldNum(cy - (M[3]*gx + M[5]*gz))+
+      out.push("1 "+COLORS[b.colorIdx].code+" "+ldNum(originX(b)/LDU)+" "+ldNum(cy - (M[3]*gx + M[5]*gz))+
                " "+ldNum(zMount)+" "+
                M.map(ldNum).join(" ")+" "+p.id+".dat");
       return;
     }
-    /* the part's own centre carried through the SAME matrix that is written on the line below */
-    const x = bx - (RM[0]*gx + RM[2]*gz) + alignDX(b)/LDU, z = bz - (RM[6]*gx + RM[8]*gz);
+    /* THE EXPORT IS PLACED BY THE SAME TWO FUNCTIONS AS THE PLAN AND THE 3D VIEW. originX and
+       originY say where the part's own origin sits along the figure's x and y, with the band, the
+       mesh's own centre, the stud snap and the fine step all in them - so a correction made once
+       reaches all three renderers instead of being copied by hand into each. The depth keeps its own
+       arithmetic: nothing about it has moved. */
+    const x = originX(b)/LDU, z = bz - (RM[6]*gx + RM[8]*gz);
     out.push("1 "+COLORS[b.colorIdx].code+" "+ldNum(x)+" "+ldNum(y)+" "+ldNum(z)+" "+
              RM.map(ldNum).join(" ")+" "+p.id+".dat");
   });
