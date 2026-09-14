@@ -8,8 +8,9 @@
 #      node tools/bridge_stub.js
 #  so an update is a pull of whatever branch the clone has checked out - the
 #  orthographic branch while that work is being tested, main after it lands.
-#  The Windows updater beside this file fetches two files from main instead,
-#  because a school Windows machine has no git; a Mac has it built in.
+#  A Windows clone updates the same way with "Update SangalaBlocks (git).cmd".
+#  Main's download updater, which fetches main's two files by hand for a school
+#  machine without git, is not on this branch: it undid a test once.
 #
 #  It never leaves you half-updated: if the pull cannot go through cleanly -
 #  no connection, a file you have edited in the folder, a branch that has

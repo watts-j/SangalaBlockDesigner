@@ -9,8 +9,9 @@ REM  It never leaves you half-updated: if the pull cannot go through cleanly -
 REM  no git, no connection, a file edited in this folder, a branch that has
 REM  moved under you - it says which and changes nothing.
 REM
-REM  "Update SangalaBlocks.cmd" beside this one is for a folder WITHOUT git: it
-REM  fetches two files of the main branch by hand. A clone uses this one.
+REM  The download updater main carries, "Update SangalaBlocks.cmd", is not on this branch:
+REM  it fetches main's page and program over whatever is here, which undid a test
+REM  once (Jo Watts, 2026-09-14). A clone of this branch updates with this one.
 REM
 REM  It only updates. Sangala Blocks is closed first if it is running, because
 REM  Windows will not replace a program file that is in use; start it again
